@@ -44,16 +44,6 @@ build-backend = "poetry_dynamic_versioning.backend"                          # o
 [tool.poetry.dependencies] # Include any python dependencies here
 python = ">=3.11.0" # mandatory to declare the required python version
 
-[tool.poetry.group.dev.dependencies]
-# Development dependencies that are always installed for development
-pytest = "^7.4.0"
-pytest-cov = "^4.1.0"
-black = "^23.7.0"
-ruff = "^0.0.287"
-mypy = "^1.5.1"
-pre-commit = "^3.3.3"
-brassy = "*"
-
 [tool.poetry.extras]
 doc = [
     "sphinx",                    # for docs buildin
@@ -63,6 +53,7 @@ doc = [
     "pinkrst",                   # for rst formatting
     "doc8",                      # for rst linting
     "brassy",                    # for changelog rendering
+    "pre-commit"
 ]
 
 lint = [
