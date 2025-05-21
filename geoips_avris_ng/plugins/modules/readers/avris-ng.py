@@ -55,9 +55,14 @@ def get_datetime_from_filename(fname):
     -------
     datetime
         Extracted datetime object
+        
+    Raises
+    ------
+    ValueError
+        If datetime cannot be extracted from the filename
     """
     # Extract the basename without path and extension
-    basename = Path.name(fname)
+    basename = Path(fname).name
 
     # Extract date pattern using regex
     match = re.search(r"ang(\d{8})t(\d{6})", basename)
@@ -75,8 +80,9 @@ def get_datetime_from_filename(fname):
 
         return datetime(year, month, day, hour, minute, second)
     else:
-        LOG.critical("Could not extract datetime from filename: {basename}")
-        raise ValueError
+        error_msg = f"Could not extract datetime from filename: {basename}"
+        LOG.critical(error_msg)
+        raise ValueError(error_msg)
 
 
 def determine_data_type(fname):
@@ -97,7 +103,7 @@ def determine_data_type(fname):
                    'corr' (corrected reflectance), or 'h2o' (water)
         product_version: version string (e.g., 'v2p5')
     """
-    basename = Path.name(fname)
+    basename = Path(fname).name
 
     # Determine data level and type
     if "rfl" in basename:
@@ -144,7 +150,7 @@ def get_band_info(img):
     # Function to classify bands
     def classifier(band):
         for region, limits in band_dictionary.items():
-            if limits["lower"] < band <= limits["upper"]:
+            if limits["lower"] <= band <= limits["upper"]:
                 return region
         return None
 
@@ -289,7 +295,7 @@ def get_metadata(img, fname, force_type=None):
     # Get band information
     bands_info = get_band_info(img)
 
-    with Path.open(fname) as f:
+    with open(fname) as f:
         data_ignore_value = False
         for ln in f.readlines():
             if " = " in ln and "data ignore value" in ln:
@@ -297,7 +303,7 @@ def get_metadata(img, fname, force_type=None):
                 break
         if not data_ignore_value:
             LOG.critical("Could not identify data ignore value.")
-            raise ValueError
+            raise ValueError("Could not identify data ignore value in file.")
 
     # Return all metadata as a dictionary
     return {
@@ -356,7 +362,7 @@ def set_metadata(dataset, metadata, fname):
     new_dataset.attrs["data_ignore_value"] = metadata["data_ignore_value"]
 
     # Optional attributes
-    new_dataset.attrs["source_file_names"] = [Path.name(fname)]
+    new_dataset.attrs["source_file_names"] = [Path(fname).name]
     new_dataset.attrs["sample_distance_km"] = 0.005  # 5m resolution in km
 
     # Add projection information if available
@@ -399,6 +405,8 @@ def read_band_data(img, band_idx, bands_info, data_type, data_ignore_value):
         DataFrame containing band information
     data_type : str
         Data type of the image ('rad', 'rfl', 'corr', 'h2o')
+    data_ignore_value : int
+        Value to be treated as missing/invalid data
 
     Returns
     -------
@@ -414,7 +422,7 @@ def read_band_data(img, band_idx, bands_info, data_type, data_ignore_value):
     else:
         # Use band index as wavelength if not found in metadata
         wavelength = float(band_idx)
-        LOG.warning(f"Band {band_idx} not found in metadata, using index as wavelength")
+        LOG.warning(f"Band {band_idx} not found in metadata, using index as wavelength. Data may be incorrect.")
 
     # Handle fill values
     band_data = np.where(band_data == data_ignore_value, np.nan, band_data)
@@ -443,12 +451,11 @@ def determine_bands_to_read(chans, bands_info, nbands):
     Parameters
     ----------
     chans : list or None
-        List of specific channels/bands to read
+        List of specific wavelengths (in nm) to read
     bands_info : pandas.DataFrame
         DataFrame containing band information
     nbands : int
         Total number of bands in the image
-
     Returns
     -------
     list
@@ -461,19 +468,16 @@ def determine_bands_to_read(chans, bands_info, nbands):
     # Find the band numbers closest to the requested wavelengths
     band_indices = []
     for chan in chans:
-        # Try to find the band with wavelength closest to the requested channel
         try:
+            # Convert to float to ensure we're treating it as a wavelength
             chan_float = float(chan)
             closest_band = bands_info.iloc[
                 (bands_info["Band center (nm)"] - chan_float).abs().argsort()[0]
             ]
             band_indices.append(int(closest_band["Band number"]))
+            LOG.info(f"Using band {int(closest_band['Band number'])} for requested wavelength {chan_float} nm")
         except (ValueError, TypeError):
-            # If chan is not a float, assume it's a band number
-            try:
-                band_indices.append(int(chan))
-            except (ValueError, TypeError):
-                LOG.warning(f"Could not interpret channel: {chan}")
+            LOG.warning(f"Could not interpret channel as wavelength: {chan}")
 
     return band_indices
 
@@ -487,7 +491,7 @@ def read_aviris_file(fname, chans=None, metadata_only=False, force_type=None):
     fname : str
         Path to the AVIRIS-NG data file (ENVI format)
     chans : list, optional
-        List of specific channels/bands to read
+        List of specific wavelengths (in nm) to read
     metadata_only : bool, optional
         If True, only read metadata without loading full dataset
     force_type : str, optional
@@ -512,7 +516,7 @@ def read_aviris_file(fname, chans=None, metadata_only=False, force_type=None):
 
     if img is None:
         LOG.critical(f"Can not open file: {fname}")
-        raise ValueError
+        raise ValueError(f"GDAL could not open file: {fname}")
 
     # Get metadata
     metadata = get_metadata(img, fname, force_type)
@@ -574,7 +578,7 @@ def _call_single_time(  # noqa: PLR0913
     metadata_only : bool, default=False
         Return before reading data if True
     chans : list, default=None
-        List of desired channels/variables
+        List of desired wavelengths (in nm)
     area_def : pyresample.AreaDefinition, default=None
         Specify region to read
     self_register : bool, default=False
@@ -589,15 +593,14 @@ def _call_single_time(  # noqa: PLR0913
     """
     if self_register:
         LOG.warning(
-            f"self_register was passed with non-default value '{self_register}'."
-            + "However self_register is not implemented for this reader.",
+            f"self_register was passed with non-default value '{self_register}'. "
+            "However self_register is not implemented for this reader."
         )
 
     if area_def:
         LOG.warning(
-            f"self_register was passed with non-default value '{self_register}'."
-            + "However self_register is not implemented for this reader."
-            + "Please manually sector if you want this functionality.",
+            "area_def was provided but is not implemented for this reader. "
+            "Please manually sector if you want this functionality."
         )
 
     if not fnames:
@@ -665,7 +668,7 @@ def call(  # noqa: PLR0913
     metadata_only : bool, default=False
         Return before reading data if True
     chans : list, default=None
-        List of desired channels/variables (can be wavelengths in nm)
+        List of desired wavelengths (in nm)
     area_def : pyresample.AreaDefinition, default=None
         Specify region to read
     self_register : bool, default=False
