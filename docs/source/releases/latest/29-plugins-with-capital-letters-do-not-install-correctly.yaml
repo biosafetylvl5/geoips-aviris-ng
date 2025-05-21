@@ -1,0 +1,13 @@
+bug fix:
+- description: |
+    Added a line to pyproject.toml that allows plugins with names with uppercase
+    letters to be installed correctly. This avoids a somewhat unhelpful error
+    message produced by pip install. Note that existing plugins with
+    lowercase-only names still install correctly.
+  files:
+    modified:
+    - 'pyproject.toml'
+  related-issue:
+    number: 29
+    repo_url: 'https://github.com/NRLMMD-GEOIPS/template_basic_plugin/'
+  title: 'Make plugins named with uppercase letters installable'
