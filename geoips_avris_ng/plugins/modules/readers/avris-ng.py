@@ -1,11 +1,83 @@
 """
-GeoIPS reader for AVIRIS-NG hyperspectral imagery data.
+AVIRIS-NG Hyperspectral Imagery Reader for GeoIPS.
 
-This reader handles data from the Airborne Visible InfraRed Imaging
-Spectrometer-Next Generation
-(AVIRIS-NG) collected during ABoVE airborne campaigns.
-It supports both Level 1 (radiance) and
-Level 2 (reflectance) data.
+This module provides functionality to read and process data from the Airborne Visible 
+InfraRed Imaging Spectrometer-Next Generation (AVIRIS-NG) instrument. AVIRIS-NG is an 
+airborne hyperspectral sensor operated by NASA Jet Propulsion Laboratory that collects 
+data across 224-480 spectral bands ranging from 380 nm to 2500 nm.
+
+The reader supports:
+    - Level 1 radiance data (units: W/m^2/sr/nm)
+    - Level 2 reflectance data (unitless)
+    - Level 2 corrected reflectance data
+    - Level 2 water vapor products (units: cm)
+
+AVIRIS-NG data is provided in ENVI format (.img files with accompanying .hdr files).
+This reader uses GDAL to access the data and converts it to xarray Datasets for 
+further processing in the GeoIPS framework.
+
+Architecture Overview:
+---------------------
+
+1. Entry Points:
+   - call(): Main entry point that interfaces with GeoIPS
+   - _call_single_time(): Processes a single time period
+
+2. Core Reading Functions:
+   - read_aviris_file(): Reads a single AVIRIS-NG file and converts to xarray
+   - get_metadata(): Extracts metadata from the file
+   - read_band_data(): Reads individual spectral bands
+
+3. Helper Functions:
+   - get_datetime_from_filename(): Parses datetime from filenames
+   - determine_data_type(): Identifies data level and type from filenames
+   - get_band_info(): Extracts band wavelength information
+   - determine_bands_to_read(): Maps requested wavelengths to band indices
+   - create_variable_name(): Generates standardized variable names
+   - set_metadata(): Populates metadata in the xarray Dataset
+
+Data Flow:
+---------
+1. The GeoIPS framework calls the `call()` function with a list of filenames.
+2. The call() function delegates to _call_single_time() for each time period.
+3. For each file:
+   a. The file is opened using GDAL
+   b. Metadata is extracted and parsed
+   c. If metadata_only=True, only metadata is returned
+   d. Otherwise, requested bands are identified and read
+   e. Each band is converted to an xarray DataArray with appropriate attributes
+   f. All bands are combined into a single xarray Dataset
+4. Results are returned as a dictionary of xarray Datasets keyed by product type
+
+Band Processing:
+--------------
+The reader handles the spectral AVIRIS-NG data by:
+1. Extracting wavelength information for each band from metadata
+2. Classifying bands into regions of the electromagnetic spectrum
+3. Creating standardized variable names based on wavelength and region
+4. Allowing users to request specific wavelengths, finding the closest matches
+
+
+Example:
+-------
+
+>>> from geoips.plugins.modules.readers.aviris_ng import call
+>>> 
+>>> # Read all bands
+>>> data = call(['path/to/aviris_ng_file.img'])
+>>> 
+>>> # Read only specific wavelengths (in nm)
+>>> data = call(['path/to/aviris_ng_file.img'], chans=[450, 550, 650])
+>>> 
+>>> # Read only metadata
+>>> metadata = call(['path/to/aviris_ng_file.img'], metadata_only=True)
+>>> 
+>>> # Force interpretation as a specific data type
+>>> data = call(['path/to/aviris_ng_file.img'], force_type='rfl')
+
+Notes:
+    This reader is designed for GeoIPS and follows its plugin architecture.
+    It returns data in the standard GeoIPS format (dictionary of xarray Datasets).
 """
 
 import logging
