@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "geoips-avris-ng" # package available at the root of the project
+name = "geoips_avris_ng" # package available at the root of the project
 version = "0.0.0"
 description = "GeoIPS Plugins for working with hyperspectral imagery from AVIRIS-NG collected during ABoVE airborne campaigns"
 authors = ["Gwyn Uttmark <biosafetylevel5@gmail.com>"]
@@ -43,6 +43,12 @@ build-backend = "poetry_dynamic_versioning.backend"                          # o
 
 [tool.poetry.dependencies] # Include any python dependencies here
 python = ">=3.11.0" # mandatory to declare the required python version
+geoips = { git = "https://github.com/NRLMMD-GEOIPS/geoips.git"}
+gdal = "*"
+numpy = "*"
+seaborn = "*"
+pandas = "*"
+
 
 [tool.poetry.extras]
 doc = [
@@ -70,7 +76,12 @@ test = [
     "pytest-xdist",              # for parallel testing
 ]
 
+jupyter = [
+    "jupyterlab",
+    "notebook"
+]
+
 [tool.poetry.plugins."geoips.plugin_packages"]
 # @ Update with your package name, ie:
 # @ "@package@" = "@package@"
-"avris_ng" = "geoips_avris_ng"
+"geoips_avris_ng" = "geoips_avris_ng"
