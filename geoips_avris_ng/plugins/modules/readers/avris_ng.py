@@ -4,7 +4,7 @@ AVIRIS-NG Hyperspectral Imagery Reader for GeoIPS.
 This module provides functionality to read and process data from the Airborne Visible
 InfraRed Imaging Spectrometer-Next Generation (AVIRIS-NG) instrument. AVIRIS-NG is an
 airborne hyperspectral sensor operated by NASA Jet Propulsion Laboratory that collects
-data across 224-480 spectral bands ranging from 380 nm to 2500 nm.
+data across 224-480 spectral bands ranging from 380 nm to 2500 nm with 5m resolution.
 
 The reader supports:
     - Level 1 radiance data (units: W/m^2/sr/nm)
