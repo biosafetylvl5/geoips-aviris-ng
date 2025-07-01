@@ -1,36 +1,30 @@
 [tool.poetry]
-name = "geoips_avris_ng" # package available at the root of the project
+name = "geoips-avris-ng"
 version = "0.0.0"
 description = "GeoIPS Plugins for working with hyperspectral imagery from AVIRIS-NG collected during ABoVE airborne campaigns"
 authors = ["Gwyn Uttmark <biosafetylevel5@gmail.com>"]
 repository = "https://github.com/biosafetylvl5/geoips-avris-ng"
 readme = "README.md"
-keywords = []
-license = ""
+keywords = ["geoips", "hyperspectral", "aviris-ng", "above", "remote-sensing"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: GIS",
 ]
-#documentation = "set the url"
 include = ["**/*.txt", "**/*.py", "**/*.yaml"]
 packages = [{include = "geoips_avris_ng"}]
 
-# uses current version .postN and not incrementing
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
-metadata = false # don't include local-version hash; date doesn't appear by deafult
-style = "pep440" # pep440 is default; can rmeove later on; used for : keeping 0.0.8 as the default install until 0.0.9 is out
-#style = "semver"
-#tag-branch = "feature-poetry"
+metadata = false
+style = "pep440"
 strict = false
 pattern = "(?x)^((?P<epoch>\\d+)!)?(?P<base>\\d+(\\.\\d+)*)([-._]?((?P<stage>[a-zA-Z]+)[-._]?(?P<revision>\\d+)?))?(\\+(?P<tagged_metadata>.+))?$"
 
@@ -39,49 +33,48 @@ files = ["*/_version.py"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"                          # object used to perform the build process
+build-backend = "poetry_dynamic_versioning.backend"
 
-[tool.poetry.dependencies] # Include any python dependencies here
-python = ">=3.11.0" # mandatory to declare the required python version
-geoips = { git = "https://github.com/NRLMMD-GEOIPS/geoips.git"}
+[tool.poetry.dependencies]
+python = "^3.11.0"
+geoips = { git = "https://github.com/NRLMMD-GEOIPS/geoips.git" }
 gdal = "*"
 numpy = "*"
 seaborn = "*"
 pandas = "*"
 
+# Documentation dependencies
+sphinx = { version = "*", optional = true }
+sphinxcontrib-runcmd = { version = "*", optional = true }
+sphinxcontrib-napoleon = { version = "*", optional = true }
+sphinx-argparse = { version = "*", optional = true }
+pinkrst = { version = "*", optional = true }
+doc8 = { version = "*", optional = true }
+brassy = { version = "*", optional = true }
+pre-commit = { version = "*", optional = true }
+
+# Linting dependencies
+prettier = { version = "*", optional = true }
+ruff = { version = "*", optional = true }
+mypy = { version = "*", optional = true }
+
+# Testing dependencies
+pytest = { version = "*", optional = true }
+pytest-cov = { version = "*", optional = true }
+pytest-xdist = { version = "*", optional = true }
+download-metoc-spectrum-response = { git = "https://github.com/biosafetylvl5/download-metoc-spectrum-response.git", optional = true }
+
+# Jupyter dependencies
+jupyterlab = { version = "*", optional = true }
+notebook = { version = "*", optional = true }
+ipywidgets = { version = "*", optional = true }
 
 [tool.poetry.extras]
-doc = [
-    "sphinx",                    # for docs buildin
-    "sphinxcontrib-runcmd",      # for docs buildin
-    "sphinxcontrib-napoleon",    # for docs buildin
-    "sphinx-argparse",           # for docs buildin
-    "pinkrst",                   # for rst formatting
-    "doc8",                      # for rst linting
-    "brassy",                    # for changelog rendering
-    "pre-commit"
-]
-
-lint = [
-    "pinkrst",                   # for rst auto-formatting
-    "doc8",                      # for rst linting
-    "prettier",                  # YAML, JSON linting
-    "ruff",                      # Python linting
-    "mypy",                      # Type checking
-]
-
-test = [
-    "pytest",                    # for running tests
-    "pytest-cov",                # for test coverage
-    "pytest-xdist",              # for parallel testing
-]
-
-jupyter = [
-    "jupyterlab",
-    "notebook"
-]
+doc = ["sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argparse", "pinkrst", "doc8", "brassy", "pre-commit"]
+lint = ["pinkrst", "doc8", "prettier", "ruff", "mypy"]
+test = ["pytest", "pytest-cov", "pytest-xdist", "srf-downloader"]
+jupyter = ["jupyterlab", "notebook", "ipywidgets"]
+all = ["sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argparse", "pinkrst", "doc8", "brassy", "pre-commit", "prettier", "ruff", "mypy", "pytest", "pytest-cov", "pytest-xdist", "download-metoc-spectrum-response", "jupyterlab", "notebook", "ipywidgets"]
 
 [tool.poetry.plugins."geoips.plugin_packages"]
-# @ Update with your package name, ie:
-# @ "@package@" = "@package@"
 "geoips_avris_ng" = "geoips_avris_ng"

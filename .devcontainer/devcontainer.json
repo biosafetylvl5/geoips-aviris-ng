@@ -3,20 +3,18 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "features": {
-        "ghcr.io/devcontainers-contrib/features/poetry:2": {
-            "version": "latest"
-        }
-    },
-    "postCreateCommand": "pip install -e .[doc,lint,test]",
+    "postCreateCommand": "pip install -e .[all] && pip install numpy==1.26.4 gdal[numpy]==3.6.2 --no-build-isolation --no-cache-dir --force-reinstall",
     "remoteEnv": {
         "GEOIPS_TESTDATA_DIR": "/workspaces/testdata",
         "GEOIPS_PACKAGES_DIR": "/workspaces",
         "GEOIPS_OUTDIRS": "/workspaces/avris-ng/geoips-out"
     },
     "mounts": [
-        "source=${localWorkspaceFolder}/../aviris-ng-data,target=/data,type=bind,consistency=cached"
-    ],
+        "source=${localWorkspaceFolder}/../aviris-ng-data,target=/data,type=bind,consistency=cached",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh/,target=/home/geoips_user/.ssh,type=bind",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.bash_vscode,target=/home/geoips_user/.bash_aliases,type=bind,readonly",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.pokemon_vscode,target=/home/geoips_user/.pokemon,type=bind,readonly",
+	],
     "customizations": {
         "vscode": {
             "extensions": [
