@@ -42,6 +42,7 @@ gdal = "*"
 numpy = "*"
 seaborn = "*"
 pandas = "*"
+scikit-learn = "*"
 
 # Documentation dependencies
 sphinx = { version = "*", optional = true }
