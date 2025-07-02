@@ -3,7 +3,7 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "postCreateCommand": "pip install -e .[all] && pip install numpy==1.26.4 gdal[numpy]==3.6.2 --no-build-isolation --no-cache-dir --force-reinstall",
+    "postCreateCommand": "pip install numpy==1.26.4 gdal[numpy]==3.6.4 --no-build-isolation --no-cache-dir --force-reinstall && pip install -e .[all] && pip install numpy==1.26.4 && gdal[numpy]==3.6.4 --no-build-isolation --no-cache-dir --force-reinstall && geoips config create-reg",
     "remoteEnv": {
         "GEOIPS_TESTDATA_DIR": "/workspaces/testdata",
         "GEOIPS_PACKAGES_DIR": "/workspaces",
@@ -12,8 +12,6 @@
     "mounts": [
         "source=${localWorkspaceFolder}/../aviris-ng-data,target=/data,type=bind,consistency=cached",
 		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh/,target=/home/geoips_user/.ssh,type=bind",
-		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.bash_vscode,target=/home/geoips_user/.bash_aliases,type=bind,readonly",
-		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.pokemon_vscode,target=/home/geoips_user/.pokemon,type=bind,readonly",
 	],
     "customizations": {
         "vscode": {

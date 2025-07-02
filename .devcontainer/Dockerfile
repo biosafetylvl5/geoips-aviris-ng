@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     liblzma-dev \
     libcurl4-gnutls-dev \
     ffmpeg \
+#    gdal-bin \
+#    libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install GDAL 3.6.4 (a more recent stable version)
