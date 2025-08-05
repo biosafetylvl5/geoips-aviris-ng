@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "geoips-avris-ng"
+name = "geoips-aviris-ng"
 version = "0.0.0"
 description = "GeoIPS Plugins for working with hyperspectral imagery from AVIRIS-NG collected during ABoVE airborne campaigns"
 authors = ["Gwyn Uttmark <biosafetylevel5@gmail.com>"]
