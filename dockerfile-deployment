@@ -1,0 +1,83 @@
+FROM python:3.12-bookworm
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies including GDAL and basic utilities
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    wget \
+    unzip \
+    git \
+    vim \
+    sudo \
+    procps \
+    coreutils \
+    util-linux \
+    gdal-bin \
+    libgdal-dev \
+    python3-gdal \
+    libsqlite3-dev \
+    libproj-dev \
+    libgeos-dev \
+    libexpat1-dev \
+    zlib1g-dev \
+    liblzma-dev \
+    libcurl4-gnutls-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Get GDAL version from system installation
+RUN export GDAL_VERSION=$(gdal-config --version) && \
+    echo "System GDAL version: $GDAL_VERSION"
+
+# Install Python packages
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install numpy first
+RUN pip install --no-cache-dir numpy==1.26.4
+
+# Install GDAL Python bindings matching system version
+RUN pip install --no-cache-dir GDAL==$(gdal-config --version)
+
+# Install other packages
+RUN pip install --no-cache-dir \
+    geoips \
+    jupyterlab
+
+# Create jupyter user with sudo privileges
+RUN groupadd -g 1000 jupyter && \
+    useradd -u 1000 -g jupyter -m -s /bin/bash jupyter && \
+    echo "jupyter ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    mkdir -p /data /home/jupyter/.jupyter /workspaces && \
+    chown -R jupyter:jupyter /data /home/jupyter /workspaces
+
+# Copy entrypoint and startup scripts
+COPY entrypoint.sh /entrypoint.sh
+COPY start-jupyter.sh /home/jupyter/start-jupyter.sh
+RUN chmod +x /entrypoint.sh /home/jupyter/start-jupyter.sh && \
+    chown jupyter:jupyter /home/jupyter/start-jupyter.sh
+
+# Switch to jupyter user
+USER jupyter
+# Add local bin to PATH for the jupyter user
+ENV PATH="/home/jupyter/.local/bin:${PATH}"
+WORKDIR /workspaces
+
+# Expose JupyterLab port
+EXPOSE 8888
+
+RUN pip uninstall -y gdal || true
+RUN pip install numpy
+RUN pip install -U setuptools wheel
+RUN pip install --no-build-isolation --no-cache-dir --force-reinstall gdal==3.6.2
+
+# Use the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
+
+
