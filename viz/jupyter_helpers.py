@@ -133,7 +133,7 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
     spectrum_df = pd.DataFrame({
         "Band name": band_names,
         "Band center (nm)": band_centers,
-        f"{site_name} radiance": spectrum
+        f"{site_name} reflectance": spectrum
     })
 
     # Create the figure - this part is always executed (not cached)
@@ -154,7 +154,7 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax_image)
-    cbar.set_label('Radiance', fontsize=12)
+    cbar.set_label('Reflectance', fontsize=12)
 
     # Check if the point is within the window
     point_in_window = (x_start <= px < x_end) and (y_start <= py < y_end)
@@ -214,7 +214,7 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
     ax_spectrum = fig.add_subplot(gs[1])
 
     # Plot the spectrum
-    spectrum_df.plot(x='Band center (nm)', y=f"{site_name} radiance",
+    spectrum_df.plot(x='Band center (nm)', y=f"{site_name} reflectance",
                     ax=ax_spectrum, c='black', label='_nolegend_', legend=False,
                     marker=spectrum_marker, linestyle=spectrum_linestyle)
 
@@ -231,13 +231,13 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
     ax_spectrum.axvline(x=actual_wavelength, color='red', linestyle='--', linewidth=2,
                        label=f'Selected wavelength: {actual_wavelength:.2f} nm')
 
-    # Mark the radiance value at the selected wavelength
+    # Mark the reflectance value at the selected wavelength
     radiance_at_wavelength = spectrum[closest_band_idx]
     ax_spectrum.plot(actual_wavelength, radiance_at_wavelength, 'ro', markersize=8)
 
     # Spectrum plot configuration
     ax_spectrum.set_xlim(min(band_centers), max(band_centers))
-    ax_spectrum.set_ylabel("Radiance", fontsize=16)
+    ax_spectrum.set_ylabel("Reflectance", fontsize=16)
     ax_spectrum.set_xlabel("Wavelength (nm)", fontsize=16)
     ax_spectrum.tick_params(axis='both', which='major', labelsize=14)
     ax_spectrum.grid('on', alpha=0.25)
@@ -683,7 +683,7 @@ def create_html_animation(frames, frame_duration=500, repeat=True, title="Wavele
             }}
 
             // Keyboard shortcuts
-            document.addEventListener('keydown', function(event) {{
+            /*document.addEventListener('keydown', function(event) {{
                 // Prevent default behavior for our handled keys
                 const handledKeys = ['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'];
                 if (handledKeys.includes(event.code)) {{
@@ -736,7 +736,7 @@ def create_html_animation(frames, frame_duration=500, repeat=True, title="Wavele
                         jumpToPercent(100);
                         break;
                 }}
-            }});
+            }});*/
 
             // Handle window focus/blur to pause/resume animation
             window.addEventListener('blur', function() {{
