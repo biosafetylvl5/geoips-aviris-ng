@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-import geoips_avris_ng.plugins.modules.interpolators.gaussian_1d as gi
+import geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d as gi
 
 
 class TestConstants:
@@ -137,7 +137,7 @@ class TestInterpolationStrategies:
         return x, y, target_x
 
     @patch(
-        "geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.GaussianProcessRegressor",
+        "geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.GaussianProcessRegressor",
     )
     def test_gp_interpolate(self, mock_gpr_class, sample_data):
         x_orig, y_orig, target_x = sample_data
@@ -156,9 +156,9 @@ class TestInterpolationStrategies:
 
         np.testing.assert_array_equal(result, [0.25, 2.25, 6.25, 12.25])
 
-    @patch("geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.interp1d")
+    @patch("geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.interp1d")
     @patch(
-        "geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.gaussian_filter1d",
+        "geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.gaussian_filter1d",
     )
     def test_gaussian_filter_interpolate(self, mock_filter, mock_interp, sample_data):
         x_orig, y_orig, target_x = sample_data
@@ -198,7 +198,7 @@ class TestGaussianInterpolatePoints:
         target_coordinates,
     ):
         with patch(
-            "geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.gaussian_interpolate_points",
+            "geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.gaussian_interpolate_points",
         ) as mock_gp:
             mock_gp.return_value = np.array([0.25, 2.25, 6.25])
 
@@ -251,7 +251,7 @@ class TestGaussianInterpolatePoints:
         points = {0.0: 0.0, 1.0: np.nan, 2.0: 4.0, 3.0: 9.0}
 
         with patch(
-            "geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.gaussian_interpolate_points",
+            "geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.gaussian_interpolate_points",
         ) as mock_gp:
             mock_gp.return_value = np.array([0.25, 2.25, 6.25])
 
@@ -427,7 +427,7 @@ class TestProcessVariable:
         expected_length = len(output_template.coords[coord_dim])
 
         with patch(
-            "geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.interpolate_1d_variable",
+            "geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.interpolate_1d_variable",
         ) as mock_interp:
             mock_interp.return_value = np.linspace(20, 21, expected_length)
 
@@ -472,7 +472,7 @@ class TestProcessVariable:
         expected_length = len(output_template.coords[coord_dim])
 
         with patch(
-            "geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.interpolate_1d_variable",
+            "geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.interpolate_1d_variable",
         ) as mock_interp:
             mock_interp.return_value = np.linspace(25, 27, expected_length)
 
@@ -528,7 +528,7 @@ class TestMainCallFunction:
 
     def test_call_function_success(self, input_dataset, output_template):
         with patch(
-            "geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.process_variable",
+            "geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.process_variable",
         ) as mock_process:
             mock_temp = xr.DataArray(np.linspace(20, 23, 7), dims=["x"])
             mock_press = xr.DataArray(np.linspace(1000, 1003, 7), dims=["x"])
@@ -560,7 +560,7 @@ class TestMainCallFunction:
 
     def test_call_function_partial_success(self, input_dataset, output_template):
         with patch(
-            "geoips_avris_ng.plugins.modules.interpolators.gaussian_1d.process_variable",
+            "geoips_aviris_ng.plugins.modules.interpolators.gaussian_1d.process_variable",
         ) as mock_process:
             # First variable succeeds, second fails
             mock_temp = xr.DataArray(np.linspace(20, 23, 7), dims=["x"])
