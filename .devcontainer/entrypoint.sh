@@ -14,8 +14,9 @@ fi
 
 # If no command is provided, keep container running
 if [ $# -eq 0 ]; then
-    echo "Container is ready. Keeping it alive..."
-    exec sleep infinity
+    echo "Running Jupyter with default token"
+    cd /home/jupyter/src
+    jupyter lab     --ip=0.0.0.0     --port=8888     --no-browser     --ServerApp.token='Q4xfVZAmcR42H6ofrtRDEZePVQ3B6REgr6obsUas'     --ServerApp.password=''     --ServerApp.allow_origin='*'     --ServerApp.disable_check_xsrf=True     --ServerApp.base_url='/jupyter/'     --ServerApp.allow_remote_access=True     --ServerApp.trust_xheaders=True
 else
     exec "$@"
 fi
