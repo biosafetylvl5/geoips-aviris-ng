@@ -8,7 +8,8 @@ mkdir -p /home/jupyter/src
 if ! pip list | grep -q geoips-aviris-ng; then
     echo "Installing geoips-aviris-ng..."
         if ! pip install --user --src /home/jupyter/src -e "git+https://github.com/biosafetylvl5/geoips-aviris-ng.git#egg=geoips-aviris-ng[all]"; then
-        echo "Installation failed, continuing without geoips-aviris-ng..."
+        echo "Installation failed, exiting..."
+	exit 1
     fi
 fi
 
