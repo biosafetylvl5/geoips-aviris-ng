@@ -3,7 +3,7 @@ name = "geoips-aviris-ng"
 version = "0.0.0"
 description = "GeoIPS Plugins for working with hyperspectral imagery from AVIRIS-NG collected during ABoVE airborne campaigns"
 authors = ["Gwyn Uttmark <biosafetylevel5@gmail.com>"]
-repository = "https://github.com/biosafetylvl5/geoips-avris-ng"
+repository = "https://github.com/biosafetylvl5/geoips-aviris-ng"
 readme = "README.md"
 keywords = ["geoips", "hyperspectral", "aviris-ng", "above", "remote-sensing"]
 classifiers = [
@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: GIS",
 ]
 include = ["**/*.txt", "**/*.py", "**/*.yaml"]
-packages = [{include = "geoips_avris_ng"}]
+packages = [{include = "geoips_aviris_ng"}]
 
 [tool.poetry-dynamic-versioning]
 enable = true
@@ -78,4 +78,4 @@ jupyter = ["jupyterlab", "notebook", "ipywidgets"]
 all = ["sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argparse", "pinkrst", "doc8", "brassy", "pre-commit", "prettier", "ruff", "mypy", "pytest", "pytest-cov", "pytest-xdist", "download-metoc-spectrum-response", "jupyterlab", "notebook", "ipywidgets"]
 
 [tool.poetry.plugins."geoips.plugin_packages"]
-"geoips_avris_ng" = "geoips_avris_ng"
+"geoips_aviris_ng" = "geoips_aviris_ng"
