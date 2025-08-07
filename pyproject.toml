@@ -75,7 +75,7 @@ doc = ["sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argpa
 lint = ["pinkrst", "doc8", "prettier", "ruff", "mypy"]
 test = ["pytest", "pytest-cov", "pytest-xdist", "srf-downloader"]
 jupyter = ["jupyterlab", "notebook", "ipywidgets"]
-all = ["sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argparse", "pinkrst", "doc8", "brassy", "pre-commit", "prettier", "ruff", "mypy", "pytest", "pytest-cov", "pytest-xdist", "download-metoc-spectrum-response", "jupyterlab", "notebook", "ipywidgets"]
+all = ["ipywidgets", "sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argparse", "pinkrst", "doc8", "brassy", "pre-commit", "prettier", "ruff", "mypy", "pytest", "pytest-cov", "pytest-xdist", "download-metoc-spectrum-response", "jupyterlab", "notebook", "ipywidgets"]
 
 [tool.poetry.plugins."geoips.plugin_packages"]
 "geoips_aviris_ng" = "geoips_aviris_ng"
