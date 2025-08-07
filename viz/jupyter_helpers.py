@@ -851,7 +851,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
             frame_filename = f"frame_{i+1:03d}_{wavelength:.0f}nm.png"
             frame_path = os.path.join(frames_directory, frame_filename)
             fig.savefig(frame_path, dpi=dpi, bbox_inches='tight')
-            convert_to_gif(temp_frame_path, temp_frame_path.replace(".png", "gif")
+            convert_to_gif(temp_frame_path, temp_frame_path.replace(".png", "gif"))
             if i == 0:
                 print(f"Saving frames as: {frame_filename} (and similar)")
 
