@@ -70,13 +70,14 @@ jupyterlab = { version = "*", optional = true }
 notebook = { version = "*", optional = true }
 ipywidgets = { version = "*", optional = true }
 ipympl = { version = "*", optional = true }
+jupyter-archive = { version = "*", optional = true }
 
 [tool.poetry.extras]
 doc = ["sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argparse", "pinkrst", "doc8", "brassy", "pre-commit"]
 lint = ["pinkrst", "doc8", "prettier", "ruff", "mypy"]
 test = ["pytest", "pytest-cov", "pytest-xdist", "srf-downloader"]
-jupyter = ["jupyterlab", "notebook", "ipywidgets", "ipympl"]
-all = ["ipympl", "ipywidgets", "sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argparse", "pinkrst", "doc8", "brassy", "pre-commit", "prettier", "ruff", "mypy", "pytest", "pytest-cov", "pytest-xdist", "download-metoc-spectrum-response", "jupyterlab", "notebook", "ipywidgets"]
+jupyter = ["jupyter-archive", "jupyterlab", "notebook", "ipywidgets", "ipympl"]
+all = ["jupyter-archive", "ipympl", "ipywidgets", "sphinx", "sphinxcontrib-runcmd", "sphinxcontrib-napoleon", "sphinx-argparse", "pinkrst", "doc8", "brassy", "pre-commit", "prettier", "ruff", "mypy", "pytest", "pytest-cov", "pytest-xdist", "download-metoc-spectrum-response", "jupyterlab", "notebook", "ipywidgets"]
 
 [tool.poetry.plugins."geoips.plugin_packages"]
 "geoips_aviris_ng" = "geoips_aviris_ng"
