@@ -19,11 +19,8 @@ def convert_to_gif(input_image_path, output_gif_path):
     try:
         img = Image.open(input_image_path)
         img.save(output_gif_path)
-        print(f"Image '{input_image_path}' successfully converted to GIF: '{output_gif_path}'")
     except FileNotFoundError:
         print(f"Error: Input image '{input_image_path}' not found.")
-    except Exception as e:
-        print(f"An error occurred when converting png to gif: {e}")
 
 def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=None, site_name="Site",
                                        figsize=(16, 12), img_cmap='gray', arrow_position=None,
