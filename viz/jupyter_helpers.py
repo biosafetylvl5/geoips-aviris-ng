@@ -17,10 +17,31 @@ import base64
 
 def convert_to_gif(input_image_path, output_gif_path):
     try:
-        img = Image.open(input_image_path)
-        img.save(output_gif_path)
-    except FileNotFoundError:
-        print(f"Error: Input image '{input_image_path}' not found.")
+        # Check if input file exists
+        if not os.path.exists(input_image_path):
+            raise FileNotFoundError(f"Input image '{input_image_path}' not found.")
+        
+        # Open and convert the image
+        with Image.open(input_image_path) as img:
+            # Convert to RGB if necessary (GIF supports RGB and P modes)
+            if img.mode not in ['RGB', 'P', 'L']:
+                img = img.convert('RGB')
+            
+            # Create output directory if it doesn't exist
+            os.makedirs(os.path.dirname(output_gif_path), exist_ok=True)
+            
+            # Save as GIF
+            img.save(output_gif_path, format='GIF')
+            
+        print(f"Successfully converted '{input_image_path}' to '{output_gif_path}'")
+        
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+    except PermissionError:
+        print(f"Error: Permission denied. Cannot write to '{output_gif_path}'")
+    except Exception as e:
+        print(f"Error converting image: {e}")
+
 
 def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=None, site_name="Site",
                                        figsize=(16, 12), img_cmap='gray', arrow_position=None,
@@ -848,16 +869,15 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # Save individual frame if requested
         if save_frames:
-            frame_filename = f"frame_{i+1:03d}_{wavelength:.0f}nm.png"
-            frame_path = os.path.join(frames_directory, frame_filename)
+            frame_filename = f"frame_{i+1:04d}_{wavelength:.0f}nm.png"
+            frame_path = os.path.join(".", frames_directory, frame_filename)
             fig.savefig(frame_path, dpi=dpi, bbox_inches='tight')
-            convert_to_gif(frame_path, frame_path.replace(".png", "gif"))
             if i == 0:
                 print(f"Saving frames as: {frame_filename} (and similar)")
 
         # If saving animation, also save to temp directory
         if save_path and temp_dir:
-            temp_frame_path = os.path.join(temp_dir, f"frame_{i:03d}.png")
+            temp_frame_path = os.path.join(temp_dir, f"frame_{i:04d}.png")
             fig.savefig(temp_frame_path, dpi=dpi, bbox_inches='tight')
 
         # Close the figure to free memory
@@ -865,6 +885,10 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
     # Print summary of saved frames
     if save_frames:
+        for item in os.listdir(frames_directory):
+            full_path = os.path.join(frames_directory, item)
+            if os.path.isfile(full_path):
+                convert_to_gif(full_path, full_path.replace("png", "gif").replace(frames_directory, frames_directory+"_gifs"))
         print(f"✓ Saved {len(wavelengths)} individual frames to: {frames_directory}/")
         print(f"  Frame naming pattern: frame_XXX_YYYnm.png")
 
@@ -872,17 +896,17 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
     if save_path:
         print(f"Saving animation to {save_path}...")
         try:
-            # Create png - frames are already loaded and copied, so they should work
-            png_path = save_path.replace('.mp4', '.png')
+            # Create GIF - frames are already loaded and copied, so they should work
+            gif_path = save_path.replace('.mp4', '.gif')
             frames[0].save(
-                png_path,
+                gif_path,
                 save_all=True,
                 append_images=frames[1:],
                 optimize=False,
                 duration=frame_duration,
                 loop=0 if repeat else 1
             )
-            print(f"✓ Animation saved as png: {png_path}")
+            print(f"✓ Animation saved as GIF: {gif_path}")
 
             # For MP4 creation
             if temp_dir:
@@ -893,7 +917,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
                         'ffmpeg',
                         '-y',
                         '-framerate', str(1000/frame_duration),
-                        '-i', os.path.join(temp_dir, 'frame_%03d.png'),
+                        '-i', os.path.join(temp_dir, 'frame_%04d.png'),
                         '-c:v', 'libx264',
                         '-pix_fmt', 'yuv420p',
                         '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2',
@@ -905,12 +929,12 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
                         print(f"✓ Animation saved as MP4: {save_path}")
                     else:
                         print(f"ffmpeg error: {result.stderr}")
-                        print("png version is available instead.")
+                        print("GIF version is available instead.")
                 except FileNotFoundError:
-                    print("ffmpeg not found. Only png version created.")
+                    print("ffmpeg not found. Only GIF version created.")
                 except Exception as e:
                     print(f"Could not create MP4 (ffmpeg error): {e}")
-                    print("png version is available instead.")
+                    print("GIF version is available instead.")
 
         except Exception as e:
             print(f"Error saving animation: {e}")
