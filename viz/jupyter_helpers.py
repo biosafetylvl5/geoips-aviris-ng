@@ -276,9 +276,9 @@ def create_html_animation(frames, frame_duration=500, repeat=True, title="Wavele
     frame_data = []
     for i, frame in enumerate(frames):
         buffer = io.BytesIO()
-        frame.save(buffer, format='GIF')
+        frame.save(buffer, format='PNG')
         img_str = base64.b64encode(buffer.getvalue()).decode()
-        frame_data.append(f"data:image/gif;base64,{img_str}")
+        frame_data.append(f"data:image/png;base64,{img_str}")
 
     html_content = f"""
     <!DOCTYPE html>
@@ -827,7 +827,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # Save the figure to a buffer and load into PIL
         buf = io.BytesIO()
-        fig.savefig(buf, format='gif', dpi=dpi, bbox_inches='tight')
+        fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight')
         buf.seek(0)
 
         # Load the image and immediately copy it to avoid buffer dependency
@@ -841,7 +841,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # Save individual frame if requested
         if save_frames:
-            frame_filename = f"frame_{i+1:03d}_{wavelength:.0f}nm.gif"
+            frame_filename = f"frame_{i+1:03d}_{wavelength:.0f}nm.png"
             frame_path = os.path.join(frames_directory, frame_filename)
             fig.savefig(frame_path, dpi=dpi, bbox_inches='tight')
             if i == 0:
@@ -849,7 +849,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # If saving animation, also save to temp directory
         if save_path and temp_dir:
-            temp_frame_path = os.path.join(temp_dir, f"frame_{i:03d}.gif")
+            temp_frame_path = os.path.join(temp_dir, f"frame_{i:03d}.png")
             fig.savefig(temp_frame_path, dpi=dpi, bbox_inches='tight')
 
         # Close the figure to free memory
@@ -858,23 +858,23 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
     # Print summary of saved frames
     if save_frames:
         print(f"✓ Saved {len(wavelengths)} individual frames to: {frames_directory}/")
-        print(f"  Frame naming pattern: frame_XXX_YYYnm.gif")
+        print(f"  Frame naming pattern: frame_XXX_YYYnm.png")
 
     # Save the animation if a path is provided
     if save_path:
         print(f"Saving animation to {save_path}...")
         try:
-            # Create GIF - frames are already loaded and copied, so they should work
-            gif_path = save_path.replace('.mp4', '.gif')
+            # Create png - frames are already loaded and copied, so they should work
+            png_path = save_path.replace('.mp4', '.png')
             frames[0].save(
-                gif_path,
+                png_path,
                 save_all=True,
                 append_images=frames[1:],
                 optimize=False,
                 duration=frame_duration,
                 loop=0 if repeat else 1
             )
-            print(f"✓ Animation saved as GIF: {gif_path}")
+            print(f"✓ Animation saved as png: {png_path}")
 
             # For MP4 creation
             if temp_dir:
@@ -885,7 +885,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
                         'ffmpeg',
                         '-y',
                         '-framerate', str(1000/frame_duration),
-                        '-i', os.path.join(temp_dir, 'frame_%03d.gif'),
+                        '-i', os.path.join(temp_dir, 'frame_%03d.png'),
                         '-c:v', 'libx264',
                         '-pix_fmt', 'yuv420p',
                         '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2',
@@ -897,12 +897,12 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
                         print(f"✓ Animation saved as MP4: {save_path}")
                     else:
                         print(f"ffmpeg error: {result.stderr}")
-                        print("GIF version is available instead.")
+                        print("png version is available instead.")
                 except FileNotFoundError:
-                    print("ffmpeg not found. Only GIF version created.")
+                    print("ffmpeg not found. Only png version created.")
                 except Exception as e:
                     print(f"Could not create MP4 (ffmpeg error): {e}")
-                    print("GIF version is available instead.")
+                    print("png version is available instead.")
 
         except Exception as e:
             print(f"Error saving animation: {e}")
