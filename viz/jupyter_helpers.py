@@ -276,9 +276,9 @@ def create_html_animation(frames, frame_duration=500, repeat=True, title="Wavele
     frame_data = []
     for i, frame in enumerate(frames):
         buffer = io.BytesIO()
-        frame.save(buffer, format='PNG')
+        frame.save(buffer, format='GIF')
         img_str = base64.b64encode(buffer.getvalue()).decode()
-        frame_data.append(f"data:image/png;base64,{img_str}")
+        frame_data.append(f"data:image/gif;base64,{img_str}")
 
     html_content = f"""
     <!DOCTYPE html>
@@ -827,7 +827,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # Save the figure to a buffer and load into PIL
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight')
+        fig.savefig(buf, format='gif', dpi=dpi, bbox_inches='tight')
         buf.seek(0)
 
         # Load the image and immediately copy it to avoid buffer dependency
@@ -841,7 +841,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # Save individual frame if requested
         if save_frames:
-            frame_filename = f"frame_{i+1:03d}_{wavelength:.0f}nm.png"
+            frame_filename = f"frame_{i+1:03d}_{wavelength:.0f}nm.gif"
             frame_path = os.path.join(frames_directory, frame_filename)
             fig.savefig(frame_path, dpi=dpi, bbox_inches='tight')
             if i == 0:
@@ -849,7 +849,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # If saving animation, also save to temp directory
         if save_path and temp_dir:
-            temp_frame_path = os.path.join(temp_dir, f"frame_{i:03d}.png")
+            temp_frame_path = os.path.join(temp_dir, f"frame_{i:03d}.gif")
             fig.savefig(temp_frame_path, dpi=dpi, bbox_inches='tight')
 
         # Close the figure to free memory
@@ -858,7 +858,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
     # Print summary of saved frames
     if save_frames:
         print(f"✓ Saved {len(wavelengths)} individual frames to: {frames_directory}/")
-        print(f"  Frame naming pattern: frame_XXX_YYYnm.png")
+        print(f"  Frame naming pattern: frame_XXX_YYYnm.gif")
 
     # Save the animation if a path is provided
     if save_path:
@@ -885,7 +885,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
                         'ffmpeg',
                         '-y',
                         '-framerate', str(1000/frame_duration),
-                        '-i', os.path.join(temp_dir, 'frame_%03d.png'),
+                        '-i', os.path.join(temp_dir, 'frame_%03d.gif'),
                         '-c:v', 'libx264',
                         '-pix_fmt', 'yuv420p',
                         '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2',
