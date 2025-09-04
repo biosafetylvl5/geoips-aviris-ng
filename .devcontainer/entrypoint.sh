@@ -5,13 +5,8 @@ mkdir -p /home/jupyter/.local/bin
 mkdir -p /home/jupyter/src
 
 # Install geoips-aviris-ng if not already installed
-if ! pip list | grep -q geoips-aviris-ng; then
-    echo "Installing geoips-aviris-ng..."
-        if ! pip install --user --src /home/jupyter/src -e "git+https://github.com/biosafetylvl5/geoips-aviris-ng.git#egg=geoips-aviris-ng[all]"; then
-        echo "Installation failed, exiting..."
-	exit 1
-    fi
-fi
+git clone https://github.com/biosafetylvl5/geoips-aviris-ng.git /home/jupyter/src 
+pip install -e /home/jupyter/src/[all]
 
 # If no command is provided, keep container running
 if [ $# -eq 0 ]; then

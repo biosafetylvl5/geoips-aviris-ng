@@ -75,7 +75,8 @@ Example:
 >>> # Force interpretation as a specific data type
 >>> data = call(['path/to/aviris_ng_file.img'], force_type='rfl')
 
-Notes:
+Notes
+-----
     This reader is designed for GeoIPS and follows its plugin architecture.
     It returns data in the standard GeoIPS format (dictionary of xarray Datasets).
 """
@@ -292,7 +293,7 @@ def create_variable_name(wavelength, data_type):
         if wavelength in [1, 2, 3]:
             return h2o_band_names[wavelength - 1]
         else:
-            return f"h2o_band_{wavelength:.1f}"
+            return f"h2o_band_{wavelength}"
 
     # For spectral data, use wavelength-based naming
     region = "other"
@@ -367,7 +368,7 @@ def get_metadata(img, fname, force_type=None):
     # Get band information
     bands_info = get_band_info(img)
 
-    with open(fname+".hdr", "r") as f:
+    with open(fname + ".hdr") as f:
         data_ignore_value = False
         for ln in f.readlines():
             if " = " in ln and "data ignore value" in ln:
@@ -494,7 +495,9 @@ def read_band_data(img, band_idx, bands_info, data_type, data_ignore_value):
     else:
         # Use band index as wavelength if not found in metadata
         wavelength = float(band_idx)
-        LOG.warning(f"Band {band_idx} not found in metadata, using index as wavelength. Data may be incorrect.")
+        LOG.warning(
+            f"Band {band_idx} not found in metadata, using index as wavelength. Data may be incorrect."
+        )
 
     # Handle fill values
     band_data = np.where(band_data == data_ignore_value, np.nan, band_data)
@@ -528,6 +531,7 @@ def determine_bands_to_read(chans, bands_info, nbands):
         DataFrame containing band information
     nbands : int
         Total number of bands in the image
+
     Returns
     -------
     list
@@ -547,7 +551,9 @@ def determine_bands_to_read(chans, bands_info, nbands):
                 (bands_info["Band center (nm)"] - chan_float).abs().argsort()[0]
             ]
             band_indices.append(int(closest_band["Band number"]))
-            LOG.info(f"Using band {int(closest_band['Band number'])} for requested wavelength {chan_float} nm")
+            LOG.info(
+                f"Using band {int(closest_band['Band number'])} for requested wavelength {chan_float} nm"
+            )
         except (ValueError, TypeError):
             LOG.warning(f"Could not interpret channel as wavelength: {chan}")
 
@@ -666,13 +672,13 @@ def _call_single_time(  # noqa: PLR0913
     if self_register:
         LOG.warning(
             f"self_register was passed with non-default value '{self_register}'. "
-            "However self_register is not implemented for this reader."
+            "However self_register is not implemented for this reader.",
         )
 
     if area_def:
         LOG.warning(
             "area_def was provided but is not implemented for this reader. "
-            "Please manually sector if you want this functionality."
+            "Please manually sector if you want this functionality.",
         )
 
     if not fnames:
@@ -722,13 +728,13 @@ def _call_single_time(  # noqa: PLR0913
     return result
 
 
-def call(  # noqa: PLR0913
+def call(
     fnames,
     metadata_only=False,
     chans=None,
     area_def=None,
     self_register=False,
-    #force_type=None,
+    # force_type=None,
 ):
     """
     Read AVIRIS-NG data from one or more files.

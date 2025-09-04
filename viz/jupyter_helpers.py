@@ -1,30 +1,50 @@
+import base64
+import hashlib
+import io
+import os
+import time
+
+import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
-import time
-import pickle
-import os
 import pandas as pd
-from matplotlib import gridspec
-import hashlib
-import xarray as xr
-import matplotlib.animation as animation
-from PIL import Image
 from IPython.display import HTML, display
-import ipywidgets as widgets
-from ipywidgets import interactive, Layout, VBox, HBox, Tab
-import io
-import base64
+from ipywidgets import HBox, Layout, Tab, VBox
+from matplotlib import gridspec
+from PIL import Image
 
-def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=None, site_name="Site",
-                                       figsize=(16, 12), img_cmap='gray', arrow_position=None,
-                                       arrow_color='red', band_dictionary=None, cache_dir=None,
-                                       window_size=200, offset_x=0, offset_y=0, north_arrow_angle=0,
-                                       image_title=None, spectrum_title=None,
-                                       spectral_point_x=None, spectral_point_y=None,
-                                       show_crosshair=False, crosshair_color='white',
-                                       crosshair_alpha=0.5, crosshair_linewidth=1,
-                                       center_x=None, center_y=None, vmin=None, vmax=None,
-                                       spectrum_linestyle="", spectrum_marker='o'):
+
+def plot_wavelength_image_with_spectrum_xarray(
+    dataset,
+    wavelength,
+    px=None,
+    py=None,
+    site_name="Site",
+    figsize=(16, 12),
+    img_cmap="gray",
+    arrow_position=None,
+    arrow_color="red",
+    band_dictionary=None,
+    cache_dir=None,
+    window_size=200,
+    offset_x=0,
+    offset_y=0,
+    north_arrow_angle=0,
+    image_title=None,
+    spectrum_title=None,
+    spectral_point_x=None,
+    spectral_point_y=None,
+    show_crosshair=False,
+    crosshair_color="white",
+    crosshair_alpha=0.5,
+    crosshair_linewidth=1,
+    center_x=None,
+    center_y=None,
+    vmin=None,
+    vmax=None,
+    spectrum_linestyle="",
+    spectrum_marker="o",
+):
     """
     Plot imagery at the top and spectral curve at the bottom with connecting markers
     using xarray Dataset instead of GDAL.
@@ -38,11 +58,13 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
 
     # Ensure px and py are provided
     if px is None or py is None:
-        raise ValueError("Either (px, py) or (spectral_point_x, spectral_point_y) must be provided")
+        raise ValueError(
+            "Either (px, py) or (spectral_point_x, spectral_point_y) must be provided",
+        )
 
     # Get the dataset that contains the radiance data
-    if isinstance(dataset, dict) and 'AVIRIS-NG-L1-RADIANCE' in dataset:
-        data_ds = dataset['AVIRIS-NG-L1-RADIANCE']
+    if isinstance(dataset, dict) and "AVIRIS-NG-L1-RADIANCE" in dataset:
+        data_ds = dataset["AVIRIS-NG-L1-RADIANCE"]
     else:
         data_ds = dataset
 
@@ -51,20 +73,20 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
     # If cache wasn't loaded, compute the data
     if not cached_data_loaded:
         # Get dimensions
-        nrows = data_ds.dims['y']
-        ncols = data_ds.dims['x']
+        nrows = data_ds.dims["y"]
+        ncols = data_ds.dims["x"]
 
         # Extract band information from variable names
-        band_names = [var for var in data_ds.data_vars if 'nm_rad' in var]
+        band_names = [var for var in data_ds.data_vars if "nm_rad" in var]
 
         # Extract wavelengths from band names
         band_centers = []
         for name in band_names:
             # Extract wavelength from band name (e.g., "violet_376nm_rad" -> 376)
-            parts = name.split('_')
+            parts = name.split("_")
             for part in parts:
-                if 'nm' in part:
-                    band_centers.append(float(part.replace('nm', '')))
+                if "nm" in part:
+                    band_centers.append(float(part.replace("nm", "")))
                     break
 
         # Find the band closest to the requested wavelength
@@ -97,7 +119,14 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
         y_end = min(nrows, center_y_with_offset + half_window)
 
         # Read only the window of interest for the selected band
-        band_data = get_band_data_xarray(data_ds, closest_band_name, x_start, y_start, x_end, y_end)
+        band_data = get_band_data_xarray(
+            data_ds,
+            closest_band_name,
+            x_start,
+            y_start,
+            x_end,
+            y_end,
+        )
 
         # Get coordinate values for the window extent
         x_coords = data_ds.x.values
@@ -106,9 +135,9 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
         # Calculate extent for the window
         window_extent = [
             x_coords[x_start],
-            x_coords[x_end-1],
-            y_coords[y_end-1],
-            y_coords[y_start]
+            x_coords[x_end - 1],
+            y_coords[y_end - 1],
+            y_coords[y_start],
         ]
 
         # Get the real-world coordinates of the pixel
@@ -118,23 +147,25 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
     # Default band dictionary if none provided
     if band_dictionary is None:
         band_dictionary = {
-            "visible-violet": {'lower': 375, 'upper': 450, 'color': 'violet'},
-            "visible-blue": {'lower': 450, 'upper': 485, 'color': 'blue'},
-            "visible-cyan": {'lower': 485, 'upper': 500, 'color': 'cyan'},
-            "visible-green": {'lower': 500, 'upper': 565, 'color': 'green'},
-            "visible-yellow": {'lower': 565, 'upper': 590, 'color': 'yellow'},
-            "visible-orange": {'lower': 590, 'upper': 625, 'color': 'orange'},
-            "visible-red": {'lower': 625, 'upper': 740, 'color': 'red'},
-            "near-infrared": {'lower': 740, 'upper': 1100, 'color': 'gray'},
-            "shortwave-infrared": {'lower': 1100, 'upper': 2500, 'color': 'white'}
+            "visible-violet": {"lower": 375, "upper": 450, "color": "violet"},
+            "visible-blue": {"lower": 450, "upper": 485, "color": "blue"},
+            "visible-cyan": {"lower": 485, "upper": 500, "color": "cyan"},
+            "visible-green": {"lower": 500, "upper": 565, "color": "green"},
+            "visible-yellow": {"lower": 565, "upper": 590, "color": "yellow"},
+            "visible-orange": {"lower": 590, "upper": 625, "color": "orange"},
+            "visible-red": {"lower": 625, "upper": 740, "color": "red"},
+            "near-infrared": {"lower": 740, "upper": 1100, "color": "gray"},
+            "shortwave-infrared": {"lower": 1100, "upper": 2500, "color": "white"},
         }
 
     # Create a DataFrame for the spectrum
-    spectrum_df = pd.DataFrame({
-        "Band name": band_names,
-        "Band center (nm)": band_centers,
-        f"{site_name} reflectance": spectrum
-    })
+    spectrum_df = pd.DataFrame(
+        {
+            "Band name": band_names,
+            "Band center (nm)": band_centers,
+            f"{site_name} reflectance": spectrum,
+        },
+    )
 
     # Create the figure - this part is always executed (not cached)
     fig = plt.figure(figsize=figsize)
@@ -143,104 +174,168 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
     gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
 
     # Title font dictionary
-    titlefont = {'fontsize': 16, 'fontweight': 2,
-                 'verticalalignment': 'baseline', 'horizontalalignment': 'center'}
+    titlefont = {
+        "fontsize": 16,
+        "fontweight": 2,
+        "verticalalignment": "baseline",
+        "horizontalalignment": "center",
+    }
 
     # Top subplot for the image
     ax_image = fig.add_subplot(gs[0])
 
     # Plot the image with vmin and vmax if provided
-    im = ax_image.imshow(band_data, cmap=img_cmap, extent=window_extent, vmin=vmin, vmax=vmax)
+    im = ax_image.imshow(
+        band_data,
+        cmap=img_cmap,
+        extent=window_extent,
+        vmin=vmin,
+        vmax=vmax,
+    )
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax_image)
-    cbar.set_label('Reflectance', fontsize=12)
+    cbar.set_label("Reflectance", fontsize=12)
 
     # Check if the point is within the window
     point_in_window = (x_start <= px < x_end) and (y_start <= py < y_end)
 
     # Mark the selected pixel on the image if it's within the window
     if point_in_window:
-        ax_image.plot(x_coord, y_coord, 'ro', markersize=10, markeredgecolor='white')
+        ax_image.plot(x_coord, y_coord, "ro", markersize=10, markeredgecolor="white")
 
     # Add crosshair if requested - do this regardless of whether point is in window
     if show_crosshair and point_in_window:
         # Draw horizontal line across the full width of the displayed image
-        ax_image.axhline(y=y_coord, color=crosshair_color, alpha=crosshair_alpha,
-                       linewidth=crosshair_linewidth, zorder=1)
+        ax_image.axhline(
+            y=y_coord,
+            color=crosshair_color,
+            alpha=crosshair_alpha,
+            linewidth=crosshair_linewidth,
+            zorder=1,
+        )
 
         # Draw vertical line across the full height of the displayed image
-        ax_image.axvline(x=x_coord, color=crosshair_color, alpha=crosshair_alpha,
-                       linewidth=crosshair_linewidth, zorder=1)
+        ax_image.axvline(
+            x=x_coord,
+            color=crosshair_color,
+            alpha=crosshair_alpha,
+            linewidth=crosshair_linewidth,
+            zorder=1,
+        )
     elif show_crosshair and not point_in_window:
         print("Point is outside the current window. Crosshair not drawn.")
 
     # Image plot configuration
     # Use custom title if provided, otherwise use default
     if image_title is None:
-        image_title = f"Imagery at {actual_wavelength:.2f} nm (Band {closest_band_name})"
+        image_title = f"Imagery at {actual_wavelength} nm (Band {closest_band_name})"
     ax_image.set_title(image_title, fontdict=titlefont, pad=15)
 
-    ax_image.set_xlabel('Easting (m)', fontsize=14)
-    ax_image.set_ylabel('Northing (m)', fontsize=14)
-    ax_image.tick_params(axis='both', which='major', labelsize=12)
-    ax_image.grid(alpha=0.3, linestyle='--')
+    ax_image.set_xlabel("Easting (m)", fontsize=14)
+    ax_image.set_ylabel("Northing (m)", fontsize=14)
+    ax_image.tick_params(axis="both", which="major", labelsize=12)
+    ax_image.grid(alpha=0.3, linestyle="--")
 
     # Add north arrow
     if arrow_position is None:
         # Default position in the upper left if not specified
-        arrow_position = (window_extent[0] + 0.9 * (window_extent[1] - window_extent[0]),
-                          window_extent[3] - 0.2 * (window_extent[3] - window_extent[2]))
+        arrow_position = (
+            window_extent[0] + 0.9 * (window_extent[1] - window_extent[0]),
+            window_extent[3] - 0.2 * (window_extent[3] - window_extent[2]),
+        )
 
-    arrow_length = 0.1 * (window_extent[3] - window_extent[2])  # 10% of the y-axis length
+    arrow_length = 0.1 * (
+        window_extent[3] - window_extent[2]
+    )  # 10% of the y-axis length
 
     # Calculate arrow components based on the angle
     import math
+
     angle_rad = math.radians(north_arrow_angle)
     dx = arrow_length * math.sin(angle_rad)
     dy = arrow_length * math.cos(angle_rad)
 
     # Draw the arrow with the specified angle
-    ax_image.arrow(arrow_position[0], arrow_position[1], dx, dy,
-                  head_width=arrow_length/5, head_length=arrow_length/3,
-                  fc=arrow_color, ec=arrow_color, linewidth=3)
+    ax_image.arrow(
+        arrow_position[0],
+        arrow_position[1],
+        dx,
+        dy,
+        head_width=arrow_length / 5,
+        head_length=arrow_length / 3,
+        fc=arrow_color,
+        ec=arrow_color,
+        linewidth=3,
+    )
 
     # Add "North" text next to the arrow
     text_x = arrow_position[0] + dx * 1.6
     text_y = arrow_position[1] + dy * 1.6
-    ax_image.text(text_x, text_y, 'N', fontsize=14, ha='center', color=arrow_color, fontweight='bold')
+    ax_image.text(
+        text_x,
+        text_y,
+        "N",
+        fontsize=14,
+        ha="center",
+        color=arrow_color,
+        fontweight="bold",
+    )
 
     # Bottom subplot for the spectrum
     ax_spectrum = fig.add_subplot(gs[1])
 
     # Plot the spectrum
-    spectrum_df.plot(x='Band center (nm)', y=f"{site_name} reflectance",
-                    ax=ax_spectrum, c='black', label='_nolegend_', legend=False,
-                    marker=spectrum_marker, linestyle=spectrum_linestyle)
+    spectrum_df.plot(
+        x="Band center (nm)",
+        y=f"{site_name} reflectance",
+        ax=ax_spectrum,
+        c="black",
+        label="_nolegend_",
+        legend=False,
+        marker=spectrum_marker,
+        linestyle=spectrum_linestyle,
+    )
 
     # Add shaders for band regions
     for region, limits in band_dictionary.items():
-        ax_spectrum.axvspan(limits['lower'], limits['upper'], alpha=0.2,
-                           color=limits['color'], label=region)
+        ax_spectrum.axvspan(
+            limits["lower"],
+            limits["upper"],
+            alpha=0.2,
+            color=limits["color"],
+            label=region,
+        )
 
     # Add water vapor region shaders
-    ax_spectrum.axvspan(1340, 1445, alpha=0.1, color='blue', label='water vapor regions')
-    ax_spectrum.axvspan(1790, 1955, alpha=0.1, color='blue')
+    ax_spectrum.axvspan(
+        1340,
+        1445,
+        alpha=0.1,
+        color="blue",
+        label="water vapor regions",
+    )
+    ax_spectrum.axvspan(1790, 1955, alpha=0.1, color="blue")
 
     # Add vertical line at the selected wavelength
-    ax_spectrum.axvline(x=actual_wavelength, color='red', linestyle='--', linewidth=2,
-                       label=f'Selected wavelength: {actual_wavelength:.2f} nm')
+    ax_spectrum.axvline(
+        x=actual_wavelength,
+        color="red",
+        linestyle="--",
+        linewidth=2,
+        label=f"Selected wavelength:\n{actual_wavelength} nm",
+    )
 
     # Mark the reflectance value at the selected wavelength
     radiance_at_wavelength = spectrum[closest_band_idx]
-    ax_spectrum.plot(actual_wavelength, radiance_at_wavelength, 'ro', markersize=8)
+    ax_spectrum.plot(actual_wavelength, radiance_at_wavelength, "ro", markersize=8)
 
     # Spectrum plot configuration
     ax_spectrum.set_xlim(min(band_centers), max(band_centers))
     ax_spectrum.set_ylabel("Reflectance", fontsize=16)
     ax_spectrum.set_xlabel("Wavelength (nm)", fontsize=16)
-    ax_spectrum.tick_params(axis='both', which='major', labelsize=14)
-    ax_spectrum.grid('on', alpha=0.25)
+    ax_spectrum.tick_params(axis="both", which="major", labelsize=14)
+    ax_spectrum.grid("on", alpha=0.25)
 
     # Use custom title if provided, otherwise use default
     if spectrum_title is None:
@@ -248,8 +343,13 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
     ax_spectrum.set_title(spectrum_title, fontdict=titlefont, pad=10)
 
     # Add legend to spectrum plot
-    legend = ax_spectrum.legend(prop={'size': 12}, loc='center left',
-                               bbox_to_anchor=(1.01, 0.5), ncol=1, framealpha=1)
+    legend = ax_spectrum.legend(
+        prop={"size": 12},
+        loc="center left",
+        bbox_to_anchor=(1.01, 0.5),
+        ncol=1,
+        framealpha=1,
+    )
 
     # Adjust layout
     plt.tight_layout()
@@ -257,12 +357,18 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
 
     return fig
 
-def create_html_animation(frames, frame_duration=500, repeat=True, title="Wavelength Animation"):
+
+def create_html_animation(
+    frames,
+    frame_duration=500,
+    repeat=True,
+    title="Wavelength Animation",
+):
     """
     Create an interactive HTML animation with speed control, wavelength selection, and frame navigation.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     frames : list
         List of PIL Image objects representing animation frames
     frame_duration : int
@@ -276,7 +382,7 @@ def create_html_animation(frames, frame_duration=500, repeat=True, title="Wavele
     frame_data = []
     for i, frame in enumerate(frames):
         buffer = io.BytesIO()
-        frame.save(buffer, format='PNG')
+        frame.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
         frame_data.append(f"data:image/png;base64,{img_str}")
 
@@ -753,22 +859,47 @@ def create_html_animation(frames, frame_duration=500, repeat=True, title="Wavele
 
     return HTML(html_content)
 
-def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_name="Site",
-                               figsize=(16, 12), img_cmap='gray', arrow_position=None,
-                               arrow_color='red', band_dictionary=None, cache_dir=None,
-                               window_size=200, offset_x=0, offset_y=0, north_arrow_angle=0,
-                               image_title_template="Imagery at {wavelength:.2f} nm",
-                               spectrum_title=None, spectral_point_x=None, spectral_point_y=None,
-                               show_crosshair=False, crosshair_color='white',
-                               crosshair_alpha=0.5, crosshair_linewidth=1,
-                               center_x=None, center_y=None, frame_duration=500,
-                               repeat=True, save_path=None, save_frames=False,
-                               frames_directory="animation_frames", dpi=100, vmin=None, vmax=None):
+
+def create_wavelength_animation(
+    dataset,
+    wavelengths,
+    px=None,
+    py=None,
+    site_name="Site",
+    figsize=(16, 12),
+    img_cmap="gray",
+    arrow_position=None,
+    arrow_color="red",
+    band_dictionary=None,
+    cache_dir=None,
+    window_size=200,
+    offset_x=0,
+    offset_y=0,
+    north_arrow_angle=0,
+    image_title_template="Imagery at {wavelength} nm",
+    spectrum_title=None,
+    spectral_point_x=None,
+    spectral_point_y=None,
+    show_crosshair=False,
+    crosshair_color="white",
+    crosshair_alpha=0.5,
+    crosshair_linewidth=1,
+    center_x=None,
+    center_y=None,
+    frame_duration=500,
+    repeat=True,
+    save_path=None,
+    save_frames=False,
+    frames_directory="animation_frames",
+    dpi=100,
+    vmin=None,
+    vmax=None,
+):
     """
     Create an animation that cycles through multiple wavelengths.
     """
-    import tempfile
     import shutil
+    import tempfile
 
     print("Generating frames for animation...")
 
@@ -785,12 +916,17 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
     # Generate each frame
     frames = []
     for i, wavelength in enumerate(wavelengths):
-        print(f"Generating frame {i+1}/{len(wavelengths)} - wavelength: {wavelength}nm")
+        print(
+            f"Generating frame {i + 1}/{len(wavelengths)} - wavelength: {wavelength}nm",
+        )
 
         wavelength_um = wavelength / 1000
 
         if image_title_template:
-            custom_image_title = image_title_template.format(wavelength=wavelength, wavelength_um=wavelength_um)
+            custom_image_title = image_title_template.format(
+                wavelength=wavelength,
+                wavelength_um=wavelength_um,
+            )
         else:
             custom_image_title = None
 
@@ -827,7 +963,7 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # Save the figure to a buffer and load into PIL
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight')
+        fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
         buf.seek(0)
 
         # Load the image and immediately copy it to avoid buffer dependency
@@ -841,16 +977,16 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
 
         # Save individual frame if requested
         if save_frames:
-            frame_filename = f"frame_{i+1:03d}_{wavelength:.0f}nm.png"
+            frame_filename = f"frame_{i + 1:03d}_{wavelength}nm.png"
             frame_path = os.path.join(frames_directory, frame_filename)
-            fig.savefig(frame_path, dpi=dpi, bbox_inches='tight')
+            fig.savefig(frame_path, dpi=dpi, bbox_inches="tight")
             if i == 0:
                 print(f"Saving frames as: {frame_filename} (and similar)")
 
         # If saving animation, also save to temp directory
         if save_path and temp_dir:
             temp_frame_path = os.path.join(temp_dir, f"frame_{i:03d}.png")
-            fig.savefig(temp_frame_path, dpi=dpi, bbox_inches='tight')
+            fig.savefig(temp_frame_path, dpi=dpi, bbox_inches="tight")
 
         # Close the figure to free memory
         plt.close(fig)
@@ -858,21 +994,21 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
     # Print summary of saved frames
     if save_frames:
         print(f"✓ Saved {len(wavelengths)} individual frames to: {frames_directory}/")
-        print(f"  Frame naming pattern: frame_XXX_YYYnm.png")
+        print("  Frame naming pattern: frame_XXX_YYYnm.png")
 
     # Save the animation if a path is provided
     if save_path:
         print(f"Saving animation to {save_path}...")
         try:
             # Create GIF - frames are already loaded and copied, so they should work
-            gif_path = save_path.replace('.mp4', '.gif')
+            gif_path = save_path.replace(".mp4", ".gif")
             frames[0].save(
                 gif_path,
                 save_all=True,
                 append_images=frames[1:],
                 optimize=False,
                 duration=frame_duration,
-                loop=0 if repeat else 1
+                loop=0 if repeat else 1,
             )
             print(f"✓ Animation saved as GIF: {gif_path}")
 
@@ -882,17 +1018,27 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
                     import subprocess
 
                     cmd = [
-                        'ffmpeg',
-                        '-y',
-                        '-framerate', str(1000/frame_duration),
-                        '-i', os.path.join(temp_dir, 'frame_%03d.png'),
-                        '-c:v', 'libx264',
-                        '-pix_fmt', 'yuv420p',
-                        '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2',
-                        save_path
+                        "ffmpeg",
+                        "-y",
+                        "-framerate",
+                        str(1000 / frame_duration),
+                        "-i",
+                        os.path.join(temp_dir, "frame_%03d.png"),
+                        "-c:v",
+                        "libx264",
+                        "-pix_fmt",
+                        "yuv420p",
+                        "-vf",
+                        "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+                        save_path,
                     ]
 
-                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    result = subprocess.run(
+                        cmd,
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                    )
                     if result.returncode == 0:
                         print(f"✓ Animation saved as MP4: {save_path}")
                     else:
@@ -921,18 +1067,22 @@ def create_wavelength_animation(dataset, wavelengths, px=None, py=None, site_nam
     print("✓ Animation complete!")
     return html_animation
 
+
 # Modified caching function for xarray datasets
 def get_band_data_xarray(dataset, band_name, x_start, y_start, x_end, y_end):
     """Function to get band data from an xarray dataset."""
-    data = dataset[band_name].isel(x=slice(x_start, x_end), y=slice(y_start, y_end)).values
+    data = (
+        dataset[band_name].isel(x=slice(x_start, x_end), y=slice(y_start, y_end)).values
+    )
     data = data.astype(float)
-    data[data == -9999.] = np.nan
+    data[data == -9999.0] = np.nan
     return data
+
 
 def get_cache_key_xarray(dataset, wavelength, px, py, window_size, offset_x, offset_y):
     """Generate a unique cache key based on input parameters."""
     # Use dataset attributes to create a unique identifier
-    if hasattr(dataset, 'source_file_names'):
+    if hasattr(dataset, "source_file_names"):
         dataset_id = str(dataset.source_file_names)
     else:
         dataset_id = str(dataset.dims)
@@ -940,39 +1090,40 @@ def get_cache_key_xarray(dataset, wavelength, px, py, window_size, offset_x, off
     key_str = f"{dataset_id}_{wavelength}_{px}_{py}_{window_size}_{offset_x}_{offset_y}"
     return hashlib.md5(key_str.encode()).hexdigest()
 
+
 def create_hyperspectral_widgets(dataset, default_values=None):
     """
     Create interactive widgets for the hyperspectral plotting function with animation support.
     """
     # Set up default values (including animation defaults)
     defaults = {
-        'wavelength': 500,
-        'center_x': 361,
-        'center_y': 3600,
-        'px': 400,
-        'py': 3600,
-        'site_name': "Site 1",
-        'window_size': 800,
-        'north_arrow_angle': 352,
-        'image_title': "Hyperspectral Image",
-        'spectrum_title': "Spectral Profile at the marked point",
-        'show_crosshair': True,
-        'crosshair_color': 'red',
-        'crosshair_alpha': 0.3,
-        'crosshair_linewidth': 1,
+        "wavelength": 500,
+        "center_x": 361,
+        "center_y": 3600,
+        "px": 400,
+        "py": 3600,
+        "site_name": "Site 1",
+        "window_size": 800,
+        "north_arrow_angle": 352,
+        "image_title": "Hyperspectral Image",
+        "spectrum_title": "Spectral Profile at the marked point",
+        "show_crosshair": True,
+        "crosshair_color": "red",
+        "crosshair_alpha": 0.3,
+        "crosshair_linewidth": 1,
         # Animation defaults
-        'create_animation': False,
-        'wl_start': 400,
-        'wl_end': 900,
-        'wl_step': 100,
-        'frame_duration': 100,
-        'animation_title_template': "Location 1 at {wavelength:.0f}nm ({wavelength_um:.1f}um)",
-        'save_animation': False,
-        'save_path': "location1_wavelength_animation_slow.mp4",
-        'save_frames': False,
-        'frames_directory': "animation_frames",
-        'vmin': 0,
-        'vmax': 1.8
+        "create_animation": False,
+        "wl_start": 400,
+        "wl_end": 900,
+        "wl_step": 100,
+        "frame_duration": 100,
+        "animation_title_template": "Location 1 at {wavelength}nm ({wavelength_um}um)",
+        "save_animation": False,
+        "save_path": "location1_wavelength_animation_slow.mp4",
+        "save_frames": False,
+        "frames_directory": "animation_frames",
+        "vmin": 0,
+        "vmax": 1.8,
     }
 
     if default_values:
@@ -980,16 +1131,16 @@ def create_hyperspectral_widgets(dataset, default_values=None):
 
     # Try to get coordinate ranges from dataset
     try:
-        if isinstance(dataset, dict) and 'AVIRIS-NG-L1-RADIANCE' in dataset:
-            data = dataset['AVIRIS-NG-L1-RADIANCE']
+        if isinstance(dataset, dict) and "AVIRIS-NG-L1-RADIANCE" in dataset:
+            data = dataset["AVIRIS-NG-L1-RADIANCE"]
         else:
             data = dataset
 
-        x_max = int(data.sizes.get('x', data.sizes.get('longitude', 1000)))
-        y_max = int(data.sizes.get('y', data.sizes.get('latitude', 1000)))
+        x_max = int(data.sizes.get("x", data.sizes.get("longitude", 1000)))
+        y_max = int(data.sizes.get("y", data.sizes.get("latitude", 1000)))
 
         # Try to get wavelength range
-        if hasattr(data, 'wavelength'):
+        if hasattr(data, "wavelength"):
             wl_min = float(data.wavelength.min())
             wl_max = float(data.wavelength.max())
             available_wavelengths = data.wavelength.values
@@ -1003,71 +1154,71 @@ def create_hyperspectral_widgets(dataset, default_values=None):
 
     # Basic Parameters Tab
     wavelength_widget = widgets.FloatSlider(
-        value=defaults['wavelength'],
+        value=defaults["wavelength"],
         min=wl_min,
         max=wl_max,
         step=1,
-        description='Wavelength (nm):',
-        style={'description_width': 'initial'},
-        layout=Layout(width='500px')
+        description="Wavelength (nm):",
+        style={"description_width": "initial"},
+        layout=Layout(width="500px"),
     )
 
     site_name_widget = widgets.Text(
-        value=defaults['site_name'],
-        description='Site Name:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='300px')
+        value=defaults["site_name"],
+        description="Site Name:",
+        style={"description_width": "initial"},
+        layout=Layout(width="300px"),
     )
 
     # Position Parameters
     center_x_widget = widgets.IntSlider(
-        value=defaults['center_x'],
+        value=defaults["center_x"],
         min=0,
         max=x_max,
         step=1,
-        description='Center X:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="Center X:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     center_y_widget = widgets.IntSlider(
-        value=defaults['center_y'],
+        value=defaults["center_y"],
         min=0,
         max=y_max,
         step=1,
-        description='Center Y:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="Center Y:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     px_widget = widgets.IntSlider(
-        value=defaults['px'],
+        value=defaults["px"],
         min=0,
         max=x_max,
         step=1,
-        description='Spectrum Point X:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="Spectrum Point X:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     py_widget = widgets.IntSlider(
-        value=defaults['py'],
+        value=defaults["py"],
         min=0,
         max=y_max,
         step=1,
-        description='Spectrum Point Y:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="Spectrum Point Y:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     window_size_widget = widgets.IntSlider(
-        value=defaults['window_size'],
+        value=defaults["window_size"],
         min=100,
         max=2000,
         step=50,
-        description='Window Size:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="Window Size:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     # Display Parameters
@@ -1076,9 +1227,9 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         min=8,
         max=24,
         step=1,
-        description='Figure Width:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='300px')
+        description="Figure Width:",
+        style={"description_width": "initial"},
+        layout=Layout(width="300px"),
     )
 
     figsize_height_widget = widgets.IntSlider(
@@ -1086,101 +1237,129 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         min=6,
         max=18,
         step=1,
-        description='Figure Height:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='300px')
+        description="Figure Height:",
+        style={"description_width": "initial"},
+        layout=Layout(width="300px"),
     )
 
     img_cmap_widget = widgets.Dropdown(
-        options=['gray', 'viridis', 'plasma', 'inferno', 'magma', 'cividis', 'jet', 'hot', 'cool'],
-        value='gray',
-        description='Colormap:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='200px')
+        options=[
+            "gray",
+            "viridis",
+            "plasma",
+            "inferno",
+            "magma",
+            "cividis",
+            "jet",
+            "hot",
+            "cool",
+        ],
+        value="gray",
+        description="Colormap:",
+        style={"description_width": "initial"},
+        layout=Layout(width="200px"),
     )
 
     # Titles
     image_title_widget = widgets.Text(
-        value=defaults['image_title'],
-        description='Image Title:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='500px')
+        value=defaults["image_title"],
+        description="Image Title:",
+        style={"description_width": "initial"},
+        layout=Layout(width="500px"),
     )
 
     spectrum_title_widget = widgets.Text(
-        value=defaults['spectrum_title'],
-        description='Spectrum Title:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='500px')
+        value=defaults["spectrum_title"],
+        description="Spectrum Title:",
+        style={"description_width": "initial"},
+        layout=Layout(width="500px"),
     )
 
     # North Arrow Parameters
     north_arrow_angle_widget = widgets.FloatSlider(
-        value=defaults['north_arrow_angle'],
+        value=defaults["north_arrow_angle"],
         min=0,
         max=360,
         step=1,
-        description='North Arrow Angle:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="North Arrow Angle:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     arrow_color_widget = widgets.Dropdown(
-        options=['red', 'blue', 'green', 'yellow', 'black', 'white', 'orange', 'purple'],
-        value='red',
-        description='Arrow Color:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='200px')
+        options=[
+            "red",
+            "blue",
+            "green",
+            "yellow",
+            "black",
+            "white",
+            "orange",
+            "purple",
+        ],
+        value="red",
+        description="Arrow Color:",
+        style={"description_width": "initial"},
+        layout=Layout(width="200px"),
     )
 
     # Crosshair Parameters
     show_crosshair_widget = widgets.Checkbox(
-        value=defaults['show_crosshair'],
-        description='Show Crosshair',
-        style={'description_width': 'initial'}
+        value=defaults["show_crosshair"],
+        description="Show Crosshair",
+        style={"description_width": "initial"},
     )
 
     crosshair_color_widget = widgets.Dropdown(
-        options=['red', 'white', 'blue', 'green', 'yellow', 'black', 'orange', 'purple'],
-        value=defaults['crosshair_color'],
-        description='Crosshair Color:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='200px')
+        options=[
+            "red",
+            "white",
+            "blue",
+            "green",
+            "yellow",
+            "black",
+            "orange",
+            "purple",
+        ],
+        value=defaults["crosshair_color"],
+        description="Crosshair Color:",
+        style={"description_width": "initial"},
+        layout=Layout(width="200px"),
     )
 
     crosshair_alpha_widget = widgets.FloatSlider(
-        value=defaults['crosshair_alpha'],
+        value=defaults["crosshair_alpha"],
         min=0.1,
         max=1.0,
         step=0.1,
-        description='Crosshair Alpha:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='300px')
+        description="Crosshair Alpha:",
+        style={"description_width": "initial"},
+        layout=Layout(width="300px"),
     )
 
     crosshair_linewidth_widget = widgets.FloatSlider(
-        value=defaults['crosshair_linewidth'],
+        value=defaults["crosshair_linewidth"],
         min=0.5,
         max=5.0,
         step=0.5,
-        description='Crosshair Width:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='300px')
+        description="Crosshair Width:",
+        style={"description_width": "initial"},
+        layout=Layout(width="300px"),
     )
 
     # Color Scale Parameters
     vmin_widget = widgets.FloatText(
-        value=defaults['vmin'],
-        description='V Min:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='200px')
+        value=defaults["vmin"],
+        description="V Min:",
+        style={"description_width": "initial"},
+        layout=Layout(width="200px"),
     )
 
     vmax_widget = widgets.FloatText(
-        value=defaults['vmax'],
-        description='V Max:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='200px')
+        value=defaults["vmax"],
+        description="V Max:",
+        style={"description_width": "initial"},
+        layout=Layout(width="200px"),
     )
 
     # Offset Parameters
@@ -1189,9 +1368,9 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         min=-500,
         max=500,
         step=10,
-        description='Offset X:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='300px')
+        description="Offset X:",
+        style={"description_width": "initial"},
+        layout=Layout(width="300px"),
     )
 
     offset_y_widget = widgets.IntSlider(
@@ -1199,148 +1378,164 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         min=-500,
         max=500,
         step=10,
-        description='Offset Y:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='300px')
+        description="Offset Y:",
+        style={"description_width": "initial"},
+        layout=Layout(width="300px"),
     )
 
     # Animation Parameters
     create_animation_widget = widgets.Checkbox(
-        value=defaults['create_animation'],
-        description='Create Animation',
-        style={'description_width': 'initial'}
+        value=defaults["create_animation"],
+        description="Create Animation",
+        style={"description_width": "initial"},
     )
 
     # Wavelength range for animation
     wl_start_widget = widgets.FloatSlider(
-        value=defaults['wl_start'],
+        value=defaults["wl_start"],
         min=wl_min,
         max=wl_max,
         step=10,
-        description='Start Wavelength:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="Start Wavelength:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     wl_end_widget = widgets.FloatSlider(
-        value=defaults['wl_end'],
+        value=defaults["wl_end"],
         min=wl_min,
         max=wl_max,
         step=10,
-        description='End Wavelength:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="End Wavelength:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     wl_step_widget = widgets.IntSlider(
-        value=defaults['wl_step'],
+        value=defaults["wl_step"],
         min=1,
         max=100,
         step=1,
-        description='Wavelength Step:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='300px')
+        description="Wavelength Step:",
+        style={"description_width": "initial"},
+        layout=Layout(width="300px"),
     )
 
     frame_duration_widget = widgets.IntSlider(
-        value=defaults['frame_duration'],
+        value=defaults["frame_duration"],
         min=50,
         max=2000,
         step=50,
-        description='Frame Duration (ms):',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        description="Frame Duration (ms):",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     animation_title_template_widget = widgets.Text(
-        value=defaults['animation_title_template'],
-        description='Animation Title Template:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='600px')
+        value=defaults["animation_title_template"],
+        description="Animation Title Template:",
+        style={"description_width": "initial"},
+        layout=Layout(width="600px"),
     )
 
     save_animation_widget = widgets.Checkbox(
-        value=defaults['save_animation'],
-        description='Save Animation',
-        style={'description_width': 'initial'}
+        value=defaults["save_animation"],
+        description="Save Animation",
+        style={"description_width": "initial"},
     )
 
     save_path_widget = widgets.Text(
-        value=defaults['save_path'],
-        description='Save Path:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        value=defaults["save_path"],
+        description="Save Path:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     # Frame saving parameters
     save_frames_widget = widgets.Checkbox(
-        value=defaults['save_frames'],
-        description='Save Individual Frames',
-        style={'description_width': 'initial'}
+        value=defaults["save_frames"],
+        description="Save Individual Frames",
+        style={"description_width": "initial"},
     )
 
     frames_directory_widget = widgets.Text(
-        value=defaults['frames_directory'],
-        description='Frames Directory:',
-        style={'description_width': 'initial'},
-        layout=Layout(width='400px')
+        value=defaults["frames_directory"],
+        description="Frames Directory:",
+        style={"description_width": "initial"},
+        layout=Layout(width="400px"),
     )
 
     # Create execute button
     execute_button = widgets.Button(
-        description='Generate Plot/Animation',
-        button_style='primary',
-        layout=Layout(width='200px', height='40px')
+        description="Generate Plot/Animation",
+        button_style="primary",
+        layout=Layout(width="200px", height="40px"),
     )
 
     # Create output widget for results
     output_widget = widgets.Output()
 
     # Create tabs for organization
-    basic_tab = VBox([
-        HBox([wavelength_widget]),
-        HBox([site_name_widget]),
-        HBox([image_title_widget]),
-        HBox([spectrum_title_widget])
-    ])
+    basic_tab = VBox(
+        [
+            HBox([wavelength_widget]),
+            HBox([site_name_widget]),
+            HBox([image_title_widget]),
+            HBox([spectrum_title_widget]),
+        ],
+    )
 
-    position_tab = VBox([
-        HBox([center_x_widget, center_y_widget]),
-        HBox([px_widget, py_widget]),
-        HBox([window_size_widget]),
-        HBox([offset_x_widget, offset_y_widget])
-    ])
+    position_tab = VBox(
+        [
+            HBox([center_x_widget, center_y_widget]),
+            HBox([px_widget, py_widget]),
+            HBox([window_size_widget]),
+            HBox([offset_x_widget, offset_y_widget]),
+        ],
+    )
 
-    display_tab = VBox([
-        HBox([figsize_width_widget, figsize_height_widget]),
-        HBox([img_cmap_widget]),
-        HBox([vmin_widget, vmax_widget])
-    ])
+    display_tab = VBox(
+        [
+            HBox([figsize_width_widget, figsize_height_widget]),
+            HBox([img_cmap_widget]),
+            HBox([vmin_widget, vmax_widget]),
+        ],
+    )
 
-    arrow_crosshair_tab = VBox([
-        HBox([north_arrow_angle_widget, arrow_color_widget]),
-        HBox([show_crosshair_widget]),
-        HBox([crosshair_color_widget]),
-        HBox([crosshair_alpha_widget, crosshair_linewidth_widget])
-    ])
+    arrow_crosshair_tab = VBox(
+        [
+            HBox([north_arrow_angle_widget, arrow_color_widget]),
+            HBox([show_crosshair_widget]),
+            HBox([crosshair_color_widget]),
+            HBox([crosshair_alpha_widget, crosshair_linewidth_widget]),
+        ],
+    )
 
-    animation_tab = VBox([
-        HBox([create_animation_widget]),
-        HBox([wl_start_widget, wl_end_widget]),
-        HBox([wl_step_widget, frame_duration_widget]),
-        HBox([animation_title_template_widget]),
-        HBox([save_animation_widget, save_path_widget]),
-        HBox([save_frames_widget, frames_directory_widget])
-    ])
+    animation_tab = VBox(
+        [
+            HBox([create_animation_widget]),
+            HBox([wl_start_widget, wl_end_widget]),
+            HBox([wl_step_widget, frame_duration_widget]),
+            HBox([animation_title_template_widget]),
+            HBox([save_animation_widget, save_path_widget]),
+            HBox([save_frames_widget, frames_directory_widget]),
+        ],
+    )
 
     # Create tabbed interface
     tab = Tab()
-    tab.children = [basic_tab, position_tab, display_tab, arrow_crosshair_tab, animation_tab]
-    tab.set_title(0, 'Basic')
-    tab.set_title(1, 'Position')
-    tab.set_title(2, 'Display')
-    tab.set_title(3, 'Arrow & Crosshair')
-    tab.set_title(4, 'Animation')
+    tab.children = [
+        basic_tab,
+        position_tab,
+        display_tab,
+        arrow_crosshair_tab,
+        animation_tab,
+    ]
+    tab.set_title(0, "Basic")
+    tab.set_title(1, "Position")
+    tab.set_title(2, "Display")
+    tab.set_title(3, "Arrow & Crosshair")
+    tab.set_title(4, "Animation")
 
     # Define the plotting function
     def on_button_click(b):
@@ -1390,7 +1585,9 @@ def create_hyperspectral_widgets(dataset, default_values=None):
                 wavelengths = np.arange(wl_start, wl_end + wl_step, wl_step)
 
                 print(f"Creating animation with {len(wavelengths)} frames...")
-                print(f"Wavelength range: {wl_start} - {wl_end} nm (step: {wl_step} nm)")
+                print(
+                    f"Wavelength range: {wl_start} - {wl_end} nm (step: {wl_step} nm)",
+                )
 
                 if save_frames:
                     print(f"Individual frames will be saved to: {frames_directory}/")
@@ -1426,7 +1623,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
                         img_cmap=img_cmap,
                         arrow_color=arrow_color,
                         offset_x=offset_x,
-                        offset_y=offset_y
+                        offset_y=offset_y,
                     )
 
                     if save_animation:
@@ -1438,7 +1635,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
                     display(animation)
 
                 except Exception as e:
-                    print(f"Error creating animation: {str(e)}")
+                    print(f"Error creating animation: {e!s}")
                     print("Falling back to single frame plot...")
                     create_animation = False
 
@@ -1466,7 +1663,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
                     vmin=vmin,
                     vmax=vmax,
                     offset_x=offset_x,
-                    offset_y=offset_y
+                    offset_y=offset_y,
                 )
                 plt.show()
 
@@ -1474,8 +1671,10 @@ def create_hyperspectral_widgets(dataset, default_values=None):
     execute_button.on_click(on_button_click)
 
     # Return the complete widget interface
-    return VBox([
-        tab,
-        HBox([execute_button]),
-        output_widget
-    ])
+    return VBox(
+        [
+            tab,
+            HBox([execute_button]),
+            output_widget,
+        ],
+    )

@@ -434,7 +434,7 @@ if __name__ == "__main__":
     gp_results = gaussian_interpolate_points(points, target_coordinates, method="gp")
     print("\nGaussian Process interpolated points (c -> d):")
     for c, d in gp_results.items():
-        print(f"  {c} -> {d:.3f}")
+        print(f"  {c} -> {d}")
 
     # Interpolate with Gaussian Filter
     filter_results = gaussian_interpolate_points(
@@ -444,7 +444,7 @@ if __name__ == "__main__":
     )
     print("\nGaussian Filter interpolated points (c -> d):")
     for c, d in filter_results.items():
-        print(f"  {c} -> {d:.3f}")
+        print(f"  {c} -> {d}")
 
     # Example with xarray
     print("\n=== XArray Example ===")

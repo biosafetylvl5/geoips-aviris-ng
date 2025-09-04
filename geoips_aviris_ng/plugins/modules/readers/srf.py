@@ -60,14 +60,13 @@ Notes
 """
 
 import logging
-import numpy as np
-import xarray as xr
-from datetime import datetime
 import os
 import re
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
 
+import numpy as np
+import xarray as xr
 from geoips.interfaces import readers
 
 # Define required plugin attributes
@@ -82,9 +81,7 @@ SPEED_OF_LIGHT = 2.99792458e10  # cm/s
 WAVENUMBER_TO_WAVELENGTH_FACTOR = 1e4  # Convert cm^-1 to micrometers
 
 
-
-
-def parse_srf_filename(filename: Union[str, os.PathLike]) -> Dict[str, Union[str, datetime]]:
+def parse_srf_filename(filename: str | os.PathLike) -> dict[str, str | datetime]:
     """Parse SRF filename to extract instrument metadata.
 
     Extracts instrument, model, date, and channel from standard SRF filename format.
@@ -112,7 +109,7 @@ def parse_srf_filename(filename: Union[str, os.PathLike]) -> Dict[str, Union[str
     basename = Path(filename).stem
 
     # Pattern matches: INSTRUMENT_MODEL_DATE_CHANNEL
-    pattern = r'([A-Za-z]+)_([A-Za-z0-9]+)_(\d{1,2}[A-Za-z]{3}\d{4})_([A-Za-z0-9]+)'
+    pattern = r"([A-Za-z]+)_([A-Za-z0-9]+)_(\d{1,2}[A-Za-z]{3}\d{4})_([A-Za-z0-9]+)"
     match = re.match(pattern, basename)
 
     if match:
@@ -128,20 +125,22 @@ def parse_srf_filename(filename: Union[str, os.PathLike]) -> Dict[str, Union[str
             date_obj = datetime(999, 9, 9)
 
         return {
-            'instrument': instrument,
-            'model': model,
-            'date': date_obj,
-            'channel': channel,
-            'platform_name': f"{instrument}_{model}"
+            "instrument": instrument,
+            "model": model,
+            "date": date_obj,
+            "channel": channel,
+            "platform_name": f"{instrument}_{model}",
         }
     else:
-        LOG.warning(f"Filename '{basename}' does not match expected pattern, using defaults")
+        LOG.warning(
+            f"Filename '{basename}' does not match expected pattern, using defaults",
+        )
         return {
-            'instrument': 'unknown',
-            'model': 'unknown',
-            'date': datetime(999, 9, 9),
-            'channel': 'unknown',
-            'platform_name': 'unknown'
+            "instrument": "unknown",
+            "model": "unknown",
+            "date": datetime(999, 9, 9),
+            "channel": "unknown",
+            "platform_name": "unknown",
         }
 
 
@@ -172,15 +171,16 @@ def convert_wavenumber_to_wavelength_in_um(wavenumbers: np.ndarray) -> np.ndarra
     if np.any(wavenumbers <= 0):
         LOG.warning("Found zero or negative wavenumbers, results may contain inf/nan")
 
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         wavelengths = WAVENUMBER_TO_WAVELENGTH_FACTOR / wavenumbers
 
-    LOG.debug(f"Wavelength range: {np.min(wavelengths):.2f} - " +
-              f"{np.max(wavelengths):.2f} μm")
+    LOG.debug(
+        f"Wavelength range: {np.min(wavelengths)} - " + f"{np.max(wavelengths)} μm",
+    )
     return wavelengths
 
 
-def read_srf_data(filepath: Union[str, os.PathLike]) -> Tuple[np.ndarray, np.ndarray]:
+def read_srf_data(filepath: str | os.PathLike) -> tuple[np.ndarray, np.ndarray]:
     """Read numeric data from SRF file.
 
     Reads two-column ASCII data containing wavenumber and response values.
@@ -217,9 +217,10 @@ def read_srf_data(filepath: Union[str, os.PathLike]) -> Tuple[np.ndarray, np.nda
         responses = data[:, 1]
 
         LOG.debug(f"Read {len(wavenumbers)} spectral data points")
-        LOG.debug(f"Wavenumber range: {wavenumbers.min():.1f} - " +
-                  f"{wavenumbers.max():.1f} cm^-1")
-        LOG.debug(f"Response range: {responses.min():.3f} - {responses.max():.3f}")
+        LOG.debug(
+            f"Wavenumber range: {wavenumbers.min()} - " + f"{wavenumbers.max()} cm^-1",
+        )
+        LOG.debug(f"Response range: {responses.min()} - {responses.max()}")
 
         return wavenumbers, responses
 
@@ -228,8 +229,7 @@ def read_srf_data(filepath: Union[str, os.PathLike]) -> Tuple[np.ndarray, np.nda
         raise e
 
 
-def read_srf_file(fname: Union[str, os.PathLike],
-                  metadata_only: bool = False) -> xr.Dataset:
+def read_srf_file(fname: str | os.PathLike, metadata_only: bool = False) -> xr.Dataset:
     """Read spectral response function data from file.
 
     Reads SRF file and creates xarray Dataset with required GeoIPS attributes
@@ -258,10 +258,10 @@ def read_srf_file(fname: Union[str, os.PathLike],
 
     # Required attributes
     dataset.attrs["source_name"] = "srf"
-    dataset.attrs["platform_name"] = metadata['platform_name']
+    dataset.attrs["platform_name"] = metadata["platform_name"]
     dataset.attrs["data_provider"] = "srf_file"
-    dataset.attrs["start_datetime"] = metadata['date']
-    dataset.attrs["end_datetime"] = metadata['date']
+    dataset.attrs["start_datetime"] = metadata["date"]
+    dataset.attrs["end_datetime"] = metadata["date"]
     dataset.attrs["interpolation_radius_of_influence"] = None
 
     # Optional attributes
@@ -269,9 +269,9 @@ def read_srf_file(fname: Union[str, os.PathLike],
     dataset.attrs["registered_dataset"] = False
 
     # SRF-specific attributes
-    dataset.attrs["instrument"] = metadata['instrument']
-    dataset.attrs["channel"] = metadata['channel']
-    dataset.attrs["model"] = metadata['model']
+    dataset.attrs["instrument"] = metadata["instrument"]
+    dataset.attrs["channel"] = metadata["channel"]
+    dataset.attrs["model"] = metadata["model"]
 
     LOG.debug("Set dataset attributes")
 
@@ -292,31 +292,33 @@ def read_srf_file(fname: Union[str, os.PathLike],
     dataset["wavenumber"].attrs = {
         "standard_name": "wavenumber",
         "long_name": "wavenumber",
-        "units": "cm-1"
+        "units": "cm-1",
     }
 
     dataset["wavelength"].attrs = {
         "standard_name": "wavelength",
         "long_name": "wavelength",
-        "units": "micrometers"
+        "units": "micrometers",
     }
 
     dataset["response"].attrs = {
         "standard_name": "spectral_response_function",
         "long_name": f"spectral response function for {metadata['channel']}",
         "units": "1",
-        "valid_range": [0.0, 1.0]
+        "valid_range": [0.0, 1.0],
     }
 
     LOG.info(f"Successfully created dataset with {len(wavenumbers)} spectral points")
     return dataset
 
 
-def _call_single_time(fnames: List[Union[str, os.PathLike]],
-                     metadata_only: bool = False,
-                     chans: Optional[List[str]] = None,
-                     area_def: Optional[object] = None,
-                     self_register: bool = False) -> Dict[str, xr.Dataset]:
+def _call_single_time(
+    fnames: list[str | os.PathLike],
+    metadata_only: bool = False,
+    chans: list[str] | None = None,
+    area_def: object | None = None,
+    self_register: bool = False,
+) -> dict[str, xr.Dataset]:
     """Process single SRF file.
 
     Reads one SRF file and returns dataset dictionary for GeoIPS processing.
@@ -354,18 +356,20 @@ def _call_single_time(fnames: List[Union[str, os.PathLike]],
     dataset = read_srf_file(fname, metadata_only=metadata_only)
 
     # Create dataset key using channel information
-    channel = dataset.attrs.get('channel', 'unknown')
+    channel = dataset.attrs.get("channel", "unknown")
     dataset_key = f"SRF_{channel}"
 
     LOG.debug(f"Created dataset with key: {dataset_key}")
     return {dataset_key: dataset, "METADATA": dataset[[]]}
 
 
-def call(fnames: List[Union[str, os.PathLike]],
-         metadata_only: bool = False,
-         chans: Optional[List[str]] = None,
-         area_def: Optional[object] = None,
-         self_register: bool = False) -> Dict[str, xr.Dataset]:
+def call(
+    fnames: list[str | os.PathLike],
+    metadata_only: bool = False,
+    chans: list[str] | None = None,
+    area_def: object | None = None,
+    self_register: bool = False,
+) -> dict[str, xr.Dataset]:
     """Read SRF data files.
 
     Main entry point for SRF reader. Processes one or more SRF files
