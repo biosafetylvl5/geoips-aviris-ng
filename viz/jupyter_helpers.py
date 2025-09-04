@@ -13,26 +13,27 @@ from ipywidgets import HBox, Layout, Tab, VBox
 from matplotlib import gridspec
 from PIL import Image
 
+
 def convert_to_gif(input_image_path, output_gif_path):
     try:
         # Check if input file exists
         if not os.path.exists(input_image_path):
             raise FileNotFoundError(f"Input image '{input_image_path}' not found.")
-        
+
         # Open and convert the image
         with Image.open(input_image_path) as img:
             # Convert to RGB if necessary (GIF supports RGB and P modes)
-            if img.mode not in ['RGB', 'P', 'L']:
-                img = img.convert('RGB')
-            
+            if img.mode not in ["RGB", "P", "L"]:
+                img = img.convert("RGB")
+
             # Create output directory if it doesn't exist
             os.makedirs(os.path.dirname(output_gif_path), exist_ok=True)
-            
+
             # Save as GIF
-            img.save(output_gif_path, format='GIF')
-            
+            img.save(output_gif_path, format="GIF")
+
         print(f"Successfully converted '{input_image_path}' to '{output_gif_path}'")
-        
+
     except FileNotFoundError as e:
         print(f"Error: {e}")
     except PermissionError:
@@ -74,16 +75,38 @@ def plot_wavelength_image_with_spectrum_xarray(
 ):
     """
 
-def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=None, site_name="Site",
-                                       figsize=(16, 12), img_cmap='gray', arrow_position=None,
-                                       arrow_color='red', band_dictionary=None, cache_dir=None,
-                                       window_size=200, offset_x=0, offset_y=0, north_arrow_angle=0,
-                                       image_title=None, spectrum_title=None,
-                                       spectral_point_x=None, spectral_point_y=None,
-                                       show_crosshair=False, crosshair_color='white',
-                                       crosshair_alpha=0.5, crosshair_linewidth=1,
-                                       center_x=None, center_y=None, vmin=None, vmax=None,
-                                       spectrum_linestyle="", spectrum_marker='o'):
+
+def plot_wavelength_image_with_spectrum_xarray(
+    dataset,
+    wavelength,
+    px=None,
+    py=None,
+    site_name="Site",
+    figsize=(16, 12),
+    img_cmap="gray",
+    arrow_position=None,
+    arrow_color="red",
+    band_dictionary=None,
+    cache_dir=None,
+    window_size=200,
+    offset_x=0,
+    offset_y=0,
+    north_arrow_angle=0,
+    image_title=None,
+    spectrum_title=None,
+    spectral_point_x=None,
+    spectral_point_y=None,
+    show_crosshair=False,
+    crosshair_color="white",
+    crosshair_alpha=0.5,
+    crosshair_linewidth=1,
+    center_x=None,
+    center_y=None,
+    vmin=None,
+    vmax=None,
+    spectrum_linestyle="",
+    spectrum_marker="o",
+):
     """
     Plot imagery at the top and spectral curve at the bottom with connecting markers
     using xarray Dataset instead of GDAL.
@@ -194,7 +217,7 @@ def plot_wavelength_image_with_spectrum_xarray(dataset, wavelength, px=None, py=
             "visible-orange": {"lower": 590, "upper": 625, "color": "orange"},
             "visible-red": {"lower": 625, "upper": 740, "color": "red"},
             "near-infrared": {"lower": 740, "upper": 1100, "color": "gray"},
-            "shortwave-infrared": {"lower": 1100, "upper": 2500, "color": "white"},
+            "shortwave-infrared": {"lower": 1100, "upper": 2550, "color": "white"},
         }
 
     # Create a DataFrame for the spectrum
@@ -1016,16 +1039,16 @@ def create_wavelength_animation(
 
         # Save individual frame if requested
         if save_frames:
-            frame_filename = f"frame_{i+1:04d}_{wavelength:.0f}nm.png"
+            frame_filename = f"frame_{i + 1:04d}_{wavelength:.0f}nm.png"
             frame_path = os.path.join(".", frames_directory, frame_filename)
-            fig.savefig(frame_path, dpi=dpi, bbox_inches='tight')
+            fig.savefig(frame_path, dpi=dpi, bbox_inches="tight")
             if i == 0:
                 print(f"Saving frames as: {frame_filename} (and similar)")
 
         # If saving animation, also save to temp directory
         if save_path and temp_dir:
             temp_frame_path = os.path.join(temp_dir, f"frame_{i:04d}.png")
-            fig.savefig(temp_frame_path, dpi=dpi, bbox_inches='tight')
+            fig.savefig(temp_frame_path, dpi=dpi, bbox_inches="tight")
 
         # Close the figure to free memory
         plt.close(fig)
@@ -1035,7 +1058,12 @@ def create_wavelength_animation(
         for item in os.listdir(frames_directory):
             full_path = os.path.join(frames_directory, item)
             if os.path.isfile(full_path):
-                convert_to_gif(full_path, full_path.replace("png", "gif").replace(frames_directory, frames_directory+"_gifs"))
+                convert_to_gif(
+                    full_path,
+                    full_path.replace("png", "gif").replace(
+                        frames_directory, frames_directory + "_gifs"
+                    ),
+                )
         print(f"✓ Saved {len(wavelengths)} individual frames to: {frames_directory}/")
         print("  Frame naming pattern: frame_XXX_YYYnm.png")
 
@@ -1061,14 +1089,19 @@ def create_wavelength_animation(
                     import subprocess
 
                     cmd = [
-                        'ffmpeg',
-                        '-y',
-                        '-framerate', str(1000/frame_duration),
-                        '-i', os.path.join(temp_dir, 'frame_%04d.png'),
-                        '-c:v', 'libx264',
-                        '-pix_fmt', 'yuv420p',
-                        '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2',
-                        save_path
+                        "ffmpeg",
+                        "-y",
+                        "-framerate",
+                        str(1000 / frame_duration),
+                        "-i",
+                        os.path.join(temp_dir, "frame_%04d.png"),
+                        "-c:v",
+                        "libx264",
+                        "-pix_fmt",
+                        "yuv420p",
+                        "-vf",
+                        "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+                        save_path,
                     ]
 
                     result = subprocess.run(
@@ -1183,12 +1216,12 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             wl_max = float(data.wavelength.max())
             available_wavelengths = data.wavelength.values
         else:
-            wl_min, wl_max = 400, 2500
-            available_wavelengths = np.arange(400, 2500, 10)
+            wl_min, wl_max = 400, 2550
+            available_wavelengths = np.arange(400, 2550, 10)
     except:
         x_max, y_max = 1000, 1000
-        wl_min, wl_max = 400, 2500
-        available_wavelengths = np.arange(400, 2500, 10)
+        wl_min, wl_max = 400, 2550
+        available_wavelengths = np.arange(400, 2550, 10)
 
     # Basic Parameters Tab
     wavelength_widget = widgets.FloatSlider(

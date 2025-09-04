@@ -4,7 +4,7 @@ AVIRIS-NG Hyperspectral Imagery Reader for GeoIPS.
 This module provides functionality to read and process data from the Airborne Visible
 InfraRed Imaging Spectrometer-Next Generation (AVIRIS-NG) instrument. AVIRIS-NG is an
 airborne hyperspectral sensor operated by NASA Jet Propulsion Laboratory that collects
-data across 224-480 spectral bands ranging from 380 nm to 2500 nm with 5m resolution.
+data across 224-480 spectral bands ranging from 380 nm to 2550 nm with 5m resolution.
 
 The reader supports:
     - Level 1 radiance data (units: W/m^2/sr/nm)
@@ -109,7 +109,7 @@ band_dictionary = {
     "visible-orange": {"lower": 590, "upper": 625, "color": "orange"},
     "visible-red": {"lower": 625, "upper": 740, "color": "red"},
     "near-infrared": {"lower": 740, "upper": 1100, "color": "gray"},
-    "shortwave-infrared": {"lower": 1100, "upper": 2500, "color": "white"},
+    "shortwave-infrared": {"lower": 1100, "upper": 2550, "color": "white"},
 }
 
 
@@ -496,7 +496,7 @@ def read_band_data(img, band_idx, bands_info, data_type, data_ignore_value):
         # Use band index as wavelength if not found in metadata
         wavelength = float(band_idx)
         LOG.warning(
-            f"Band {band_idx} not found in metadata, using index as wavelength. Data may be incorrect."
+            f"Band {band_idx} not found in metadata, using index as wavelength. Data may be incorrect.",
         )
 
     # Handle fill values
@@ -552,7 +552,7 @@ def determine_bands_to_read(chans, bands_info, nbands):
             ]
             band_indices.append(int(closest_band["Band number"]))
             LOG.info(
-                f"Using band {int(closest_band['Band number'])} for requested wavelength {chan_float} nm"
+                f"Using band {int(closest_band['Band number'])} for requested wavelength {chan_float} nm",
             )
         except (ValueError, TypeError):
             LOG.warning(f"Could not interpret channel as wavelength: {chan}")

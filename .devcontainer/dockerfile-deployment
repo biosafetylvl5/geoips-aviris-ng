@@ -9,6 +9,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Install system dependencies including GDAL and basic utilities
 RUN apt-get update && apt-get install -y \
     build-essential \
+    ffmpeg \ 
     curl \
     wget \
     unzip \
