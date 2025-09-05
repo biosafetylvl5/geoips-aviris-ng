@@ -1174,9 +1174,7 @@ def get_cache_key_xarray(dataset, wavelength, px, py, window_size, offset_x, off
 
 
 def create_hyperspectral_widgets(dataset, default_values=None):
-    """
-    Create interactive widgets for the hyperspectral plotting function with animation support.
-    """
+    """Create interactive widgets for the plotting function with animation support."""
     # Set up default values (including animation defaults)
     defaults = {
         "wavelength": 500,
@@ -1672,12 +1670,15 @@ def create_hyperspectral_widgets(dataset, default_values=None):
 
             if clip_v:
                 if isinstance(dataset, dict) and "AVIRIS-NG-L1-RADIANCE" in dataset:
-                    data["AVIRIS-NG-L1-RADIANCE"] = clip_to_nan(
-                        data["AVIRIS-NG-L1-RADIANCE"],
+                    working_dataset = dataset
+                    working_dataset["AVIRIS-NG-L1-RADIANCE"] = clip_to_nan(
+                        working_dataset["AVIRIS-NG-L1-RADIANCE"],
                         vmax,
                     )
                 else:
-                    dataset = clip_to_nan(dataset, vmax)
+                    working_dataset = clip_to_nan(dataset, vmax)
+            else:
+                working_dataset = dataset
 
             if create_animation:
                 # Create wavelength array for animation
@@ -1697,7 +1698,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
 
                 try:
                     animation = create_wavelength_animation(
-                        dataset=dataset,
+                        dataset=working_dataset,
                         wavelengths=wavelengths,
                         center_x=center_x,
                         center_y=center_y,
@@ -1741,7 +1742,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             if not create_animation:
                 # Create single plot
                 fig = plot_wavelength_image_with_spectrum_xarray(
-                    dataset=dataset,
+                    dataset=working_dataset,
                     wavelength=wavelength,
                     center_x=center_x,
                     center_y=center_y,
