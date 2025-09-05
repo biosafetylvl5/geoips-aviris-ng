@@ -14,6 +14,15 @@ from matplotlib import gridspec
 from PIL import Image
 
 
+def clip_to_nan(ds, max_val, exclude=["time", "latitude", "longitude"]):
+    data_vars = {
+        var: ds[var].where(ds[var] <= max_val)
+        for var in ds.data_vars
+        if var not in exclude
+    }
+    return ds.assign(data_vars)
+
+
 def convert_to_gif(input_image_path, output_gif_path):
     try:
         # Check if input file exists
@@ -1186,9 +1195,9 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         "crosshair_linewidth": 1,
         # Animation defaults
         "create_animation": False,
-        "wl_start": 400,
-        "wl_end": 900,
-        "wl_step": 100,
+        "wl_start": 380,
+        "wl_end": 2510,
+        "wl_step": 5,
         "frame_duration": 100,
         "animation_title_template": "Location 1 at {wavelength}nm ({wavelength_um}um)",
         "save_animation": False,
@@ -1197,6 +1206,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         "frames_directory": "animation_frames",
         "vmin": 0,
         "vmax": 1.8,
+        "clip_v": True,
     }
 
     if default_values:
@@ -1218,12 +1228,12 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             wl_max = float(data.wavelength.max())
             available_wavelengths = data.wavelength.values
         else:
-            wl_min, wl_max = 400, 2550
-            available_wavelengths = np.arange(400, 2550, 10)
+            wl_min, wl_max = 380, 2550
+            available_wavelengths = np.arange(380, 2550, 5)
     except:
         x_max, y_max = 1000, 1000
-        wl_min, wl_max = 400, 2550
-        available_wavelengths = np.arange(400, 2550, 10)
+        wl_min, wl_max = 380, 2550
+        available_wavelengths = np.arange(wl_min, wl_max, 5)
 
     # Basic Parameters Tab
     wavelength_widget = widgets.FloatSlider(
@@ -1435,6 +1445,12 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         layout=Layout(width="200px"),
     )
 
+    clip_v_widget = widgets.Checkbox(
+        value=defaults["clip_v"],
+        description="Clip max by V Max",
+        style={"description_width": "initial"},
+    )
+
     # Offset Parameters
     offset_x_widget = widgets.IntSlider(
         value=0,
@@ -1468,7 +1484,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         value=defaults["wl_start"],
         min=wl_min,
         max=wl_max,
-        step=10,
+        step=5,
         description="Start Wavelength:",
         style={"description_width": "initial"},
         layout=Layout(width="400px"),
@@ -1478,7 +1494,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         value=defaults["wl_end"],
         min=wl_min,
         max=wl_max,
-        step=10,
+        step=5,
         description="End Wavelength:",
         style={"description_width": "initial"},
         layout=Layout(width="400px"),
@@ -1571,7 +1587,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         [
             HBox([figsize_width_widget, figsize_height_widget]),
             HBox([img_cmap_widget]),
-            HBox([vmin_widget, vmax_widget]),
+            HBox([vmin_widget, vmax_widget, clip_v_widget]),
         ],
     )
 
@@ -1636,6 +1652,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             crosshair_linewidth = crosshair_linewidth_widget.value
             vmin = vmin_widget.value
             vmax = vmax_widget.value
+            clip_v = clip_v_widget.value
             offset_x = offset_x_widget.value
             offset_y = offset_y_widget.value
             create_animation = create_animation_widget.value
@@ -1652,6 +1669,15 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             # Handle None values for vmin/vmax
             vmin = 0 if vmin is None else vmin
             vmax = None if vmax == 0 else vmax
+
+            if clip_v:
+                if isinstance(dataset, dict) and "AVIRIS-NG-L1-RADIANCE" in dataset:
+                    data["AVIRIS-NG-L1-RADIANCE"] = clip_to_nan(
+                        data["AVIRIS-NG-L1-RADIANCE"],
+                        vmax,
+                    )
+                else:
+                    dataset = clip_to_nan(dataset, vmax)
 
             if create_animation:
                 # Create wavelength array for animation
