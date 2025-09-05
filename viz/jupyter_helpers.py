@@ -357,6 +357,8 @@ def plot_wavelength_image_with_spectrum_xarray(
         legend=False,
         marker=spectrum_marker,
         linestyle=spectrum_linestyle,
+        vmin=vmin,
+        vmax=vmax,
     )
 
     # Add shaders for band regions
@@ -1061,7 +1063,8 @@ def create_wavelength_animation(
                 convert_to_gif(
                     full_path,
                     full_path.replace("png", "gif").replace(
-                        frames_directory, frames_directory + "_gifs"
+                        frames_directory,
+                        frames_directory + "_gifs",
                     ),
                 )
         print(f"✓ Saved {len(wavelengths)} individual frames to: {frames_directory}/")
@@ -1648,8 +1651,8 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             frames_directory = frames_directory_widget.value
 
             # Handle None values for vmin/vmax
-            vmin = None if vmin == 0 else vmin
-            vmax = None if vmax == 0 else vmax
+            vmin = 0 if vmin is None else vmin
+            vmax = 0 if vmax is None else vmax
 
             if create_animation:
                 # Create wavelength array for animation
