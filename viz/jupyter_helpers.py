@@ -1669,6 +1669,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             vmax = None if vmax == 0 else vmax
 
             if clip_v:
+                print(f"Removing maximum values above {vmax}")
                 if isinstance(dataset, dict) and "AVIRIS-NG-L1-RADIANCE" in dataset:
                     working_dataset = dataset
                     working_dataset["AVIRIS-NG-L1-RADIANCE"] = clip_to_nan(
