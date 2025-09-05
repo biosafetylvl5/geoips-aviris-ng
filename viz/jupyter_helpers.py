@@ -357,8 +357,6 @@ def plot_wavelength_image_with_spectrum_xarray(
         legend=False,
         marker=spectrum_marker,
         linestyle=spectrum_linestyle,
-        vmin=vmin,
-        vmax=vmax,
     )
 
     # Add shaders for band regions
@@ -398,6 +396,7 @@ def plot_wavelength_image_with_spectrum_xarray(
     ax_spectrum.set_xlim(min(band_centers), max(band_centers))
     ax_spectrum.set_ylabel("Reflectance", fontsize=16)
     ax_spectrum.set_xlabel("Wavelength (nm)", fontsize=16)
+    ax_spectrum.set_ylim(vmin, vmax)
     ax_spectrum.tick_params(axis="both", which="major", labelsize=14)
     ax_spectrum.grid("on", alpha=0.25)
 
@@ -1652,7 +1651,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
 
             # Handle None values for vmin/vmax
             vmin = 0 if vmin is None else vmin
-            vmax = 0 if vmax is None else vmax
+            vmax = None if vmax == 0 else vmax
 
             if create_animation:
                 # Create wavelength array for animation
