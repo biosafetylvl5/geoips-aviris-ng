@@ -113,6 +113,7 @@ def plot_wavelength_image_with_spectrum_xarray(
     center_y=None,
     vmin=None,
     vmax=None,
+    vmax_spectrum=None,
     spectrum_linestyle="",
     spectrum_marker="o",
 ):
@@ -405,7 +406,7 @@ def plot_wavelength_image_with_spectrum_xarray(
     ax_spectrum.set_xlim(min(band_centers), max(band_centers))
     ax_spectrum.set_ylabel("Reflectance", fontsize=16)
     ax_spectrum.set_xlabel("Wavelength (nm)", fontsize=16)
-    ax_spectrum.set_ylim(vmin, vmax)
+    ax_spectrum.set_ylim(vmin, vmax_spectrum)
     ax_spectrum.tick_params(axis="both", which="major", labelsize=14)
     ax_spectrum.grid("on", alpha=0.25)
 
@@ -966,6 +967,7 @@ def create_wavelength_animation(
     dpi=100,
     vmin=None,
     vmax=None,
+    vmax_spectrum=None,
 ):
     """
     Create an animation that cycles through multiple wavelengths.
@@ -1031,6 +1033,7 @@ def create_wavelength_animation(
             center_y=center_y,
             vmin=vmin,
             vmax=vmax,
+            vmax_spectrum=vmax_spectrum,
         )
 
         # Save the figure to a buffer and load into PIL
@@ -1204,6 +1207,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         "frames_directory": "animation_frames",
         "vmin": 0,
         "vmax": 1.8,
+        "vmax_spectrum": 1.8,
         "clip_v": True,
     }
 
@@ -1445,8 +1449,15 @@ def create_hyperspectral_widgets(dataset, default_values=None):
 
     clip_v_widget = widgets.Checkbox(
         value=defaults["clip_v"],
-        description="Clip max by V Max",
+        description="Clip max value by V Max",
         style={"description_width": "initial"},
+    )
+
+    vmax_spectrum_widget = widgets.FloatText(
+        value=defaults["vmax"],
+        description="V Max (Spectrum):",
+        style={"description_width": "initial"},
+        layout=Layout(width="200px"),
     )
 
     # Offset Parameters
@@ -1585,7 +1596,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
         [
             HBox([figsize_width_widget, figsize_height_widget]),
             HBox([img_cmap_widget]),
-            HBox([vmin_widget, vmax_widget, clip_v_widget]),
+            HBox([vmin_widget, vmax_widget, clip_v_widget, vmax_spectrum_widget]),
         ],
     )
 
@@ -1650,6 +1661,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             crosshair_linewidth = crosshair_linewidth_widget.value
             vmin = vmin_widget.value
             vmax = vmax_widget.value
+            vmax_spectrum = vmax_spectrum_widget.value
             clip_v = clip_v_widget.value
             offset_x = offset_x_widget.value
             offset_y = offset_y_widget.value
@@ -1667,6 +1679,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
             # Handle None values for vmin/vmax
             vmin = 0 if vmin is None else vmin
             vmax = None if vmax == 0 else vmax
+            vmax_spectrum = None if vmax_spectrum == 0 else vmax_spectrum
 
             if clip_v:
                 print(f"Removing maximum values above {vmax}")
@@ -1720,6 +1733,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
                         frames_directory=frames_save_dir,
                         vmin=vmin,
                         vmax=vmax,
+                        vmax_spectrum=vmax_spectrum,
                         figsize=(figsize_width, figsize_height),
                         img_cmap=img_cmap,
                         arrow_color=arrow_color,
@@ -1763,6 +1777,7 @@ def create_hyperspectral_widgets(dataset, default_values=None):
                     arrow_color=arrow_color,
                     vmin=vmin,
                     vmax=vmax,
+                    vmax_spectrum=vmax_spectrum,
                     offset_x=offset_x,
                     offset_y=offset_y,
                 )
